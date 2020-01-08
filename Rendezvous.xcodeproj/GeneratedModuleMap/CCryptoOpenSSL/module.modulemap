@@ -1,0 +1,4 @@
+module CCryptoOpenSSL {
+    umbrella "/Users/user/Development/Rendezvous/.build/checkouts/crypto/Sources/CCryptoOpenSSL/include"
+    export *
+}

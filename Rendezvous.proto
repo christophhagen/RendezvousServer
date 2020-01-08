@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package RV;
+
+// The information about a user allowed to register with the server
+message AllowedUser {
+    
+    // The user name
+    string name = 1;
+    
+    // The pin to use for registration
+    uint32 pin = 2;
+    
+    // The time until which the user can register (in seconds since 1.1.1970)
+    uint32 expiry = 3;
+    
+    // The number of tries until the registration is blocked.
+    uint32 numberOfTries = 4;
+}
+
+// A device of an internal user
+message UserDevice {
+    
+    // The public identity key of the device
+    bytes publicKey = 1;
+}
+
+// A user who stores his/her data on the server
+message InternalUser {
+
+    // The name of the user
+    string name = 1;
+    
+    // The authentication token of the server
+    bytes authToken = 2;
+    
+    // The public identity key
+    bytes publicKey = 3;
+    
+    // The devices of the user
+    repeated UserDevice devices = 4;
+}
+
+// The data stored on disk
+message ManagementData {
+    
+    // The administrator authentication token
+    bytes adminToken = 1;
+    
+    // The registered users who store their data on the server
+    repeated InternalUser internalUsers = 2;
+    
+    // The users allowed to register, index by their names
+    map<string, AllowedUser> allowedUsers = 3;
+}
+

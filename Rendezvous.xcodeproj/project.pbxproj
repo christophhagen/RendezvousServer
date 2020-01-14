@@ -26,6 +26,13 @@
 		CE1E034723C64B2C00F15FD3 /* ConfigError.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1E034623C64B2C00F15FD3 /* ConfigError.swift */; };
 		CE1E034923C64CE700F15FD3 /* PublicKeyProtobuf.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1E034823C64CE700F15FD3 /* PublicKeyProtobuf.swift */; };
 		CE1E034B23C65CD600F15FD3 /* TimestampedProtobuf.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1E034A23C65CD600F15FD3 /* TimestampedProtobuf.swift */; };
+		CE5FAA5423CE2BB1001B9F1B /* Users.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5FAA5323CE2BB1001B9F1B /* Users.swift */; };
+		CE5FAA5623CE30B1001B9F1B /* Admin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5FAA5523CE30B1001B9F1B /* Admin.swift */; };
+		CE8A48A923CDD4040097D974 /* Topics.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48A823CDD4040097D974 /* Topics.swift */; };
+		CE8A48AB23CDD59D0097D974 /* TopicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */; };
+		CE8A48AD23CDD5D00097D974 /* Misc.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48AC23CDD5D00097D974 /* Misc.swift */; };
+		CE8A48AF23CDD7290097D974 /* PreKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48AE23CDD7290097D974 /* PreKeys.swift */; };
+		CE8A48B123CDD7940097D974 /* Devices.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48B023CDD7940097D974 /* Devices.swift */; };
 		OBJ_1080 /* AppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* AppTests.swift */; };
 		OBJ_1082 /* App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "Rendezvous::App::Product" /* App.framework */; };
 		OBJ_1083 /* Ed25519.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "Ed25519::Ed25519::Product" /* Ed25519.framework */; };
@@ -4345,6 +4352,13 @@
 		CE1E034623C64B2C00F15FD3 /* ConfigError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigError.swift; sourceTree = "<group>"; };
 		CE1E034823C64CE700F15FD3 /* PublicKeyProtobuf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicKeyProtobuf.swift; sourceTree = "<group>"; };
 		CE1E034A23C65CD600F15FD3 /* TimestampedProtobuf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampedProtobuf.swift; sourceTree = "<group>"; };
+		CE5FAA5323CE2BB1001B9F1B /* Users.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Users.swift; sourceTree = "<group>"; };
+		CE5FAA5523CE30B1001B9F1B /* Admin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Admin.swift; sourceTree = "<group>"; };
+		CE8A48A823CDD4040097D974 /* Topics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Topics.swift; sourceTree = "<group>"; };
+		CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicKeys.swift; sourceTree = "<group>"; };
+		CE8A48AC23CDD5D00097D974 /* Misc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Misc.swift; sourceTree = "<group>"; };
+		CE8A48AE23CDD7290097D974 /* PreKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreKeys.swift; sourceTree = "<group>"; };
+		CE8A48B023CDD7940097D974 /* Devices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Devices.swift; sourceTree = "<group>"; };
 		"CEd25519::CEd25519::Product" /* CEd25519.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CEd25519.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		"Console::Command::Product" /* Command.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Command.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		"Console::Console::Product" /* Console.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Console.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -6011,8 +6025,15 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_20 /* Config.swift */,
+				CE5FAA5523CE30B1001B9F1B /* Admin.swift */,
 				OBJ_21 /* Server.swift */,
+				CE5FAA5323CE2BB1001B9F1B /* Users.swift */,
+				CE8A48B023CDD7940097D974 /* Devices.swift */,
+				CE8A48AE23CDD7290097D974 /* PreKeys.swift */,
+				CE8A48A823CDD4040097D974 /* Topics.swift */,
+				CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */,
 				OBJ_24 /* Storage.swift */,
+				CE8A48AC23CDD5D00097D974 /* Misc.swift */,
 			);
 			path = Server;
 			sourceTree = "<group>";
@@ -10805,22 +10826,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				CE8A48B123CDD7940097D974 /* Devices.swift in Sources */,
+				CE8A48A923CDD4040097D974 /* Topics.swift in Sources */,
 				CE1E034923C64CE700F15FD3 /* PublicKeyProtobuf.swift in Sources */,
+				CE5FAA5623CE30B1001B9F1B /* Admin.swift in Sources */,
 				OBJ_933 /* RendezvousError.swift in Sources */,
 				OBJ_934 /* ServerError.swift in Sources */,
 				OBJ_935 /* Crypto.swift in Sources */,
+				CE8A48AF23CDD7290097D974 /* PreKeys.swift in Sources */,
 				OBJ_936 /* Log.swift in Sources */,
 				OBJ_937 /* HeaderKey.swift in Sources */,
 				OBJ_938 /* Rendezvous.pb.swift in Sources */,
 				OBJ_939 /* Request+Extensions.swift in Sources */,
+				CE8A48AB23CDD59D0097D974 /* TopicKeys.swift in Sources */,
 				OBJ_940 /* Config.swift in Sources */,
 				OBJ_941 /* Server.swift in Sources */,
 				CE1E034123C6379100F15FD3 /* Protobuf+Extensions.swift in Sources */,
 				CE1E034723C64B2C00F15FD3 /* ConfigError.swift in Sources */,
+				CE5FAA5423CE2BB1001B9F1B /* Users.swift in Sources */,
 				CE1E034323C6394400F15FD3 /* SignedProtobuf.swift in Sources */,
 				OBJ_944 /* Storage.swift in Sources */,
 				OBJ_945 /* boot.swift in Sources */,
 				OBJ_946 /* configure.swift in Sources */,
+				CE8A48AD23CDD5D00097D974 /* Misc.swift in Sources */,
 				CE1E034B23C65CD600F15FD3 /* TimestampedProtobuf.swift in Sources */,
 				OBJ_947 /* routes.swift in Sources */,
 			);

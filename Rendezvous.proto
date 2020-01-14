@@ -18,27 +18,42 @@ message AllowedUser {
     uint32 numberOfTries = 4;
 }
 
-// A device of an internal user
-message UserDevice {
-    
-    // The public identity key of the device
-    bytes publicKey = 1;
-}
-
 // A user who stores his/her data on the server
 message InternalUser {
 
-    // The name of the user
-    string name = 1;
-    
-    // The authentication token of the server
-    bytes authToken = 2;
-    
     // The public identity key
-    bytes publicKey = 3;
+    bytes publicKey = 1;
     
-    // The devices of the user
+    // The time when the user was created (in seconds since 1.1.1970)
+    uint32 creationTime = 2;
+    
+    // The name of the user
+    string name = 3;
+    
+    // The devices of the user, must be sorted in ascending order by their creationTime.
     repeated UserDevice devices = 4;
+    
+    // The time when the data was signed
+    uint32 timestamp = 5;
+    
+    // The signature of the user info, signed by the user identity key.
+    bytes signature = 6;
+}
+
+// A bundle to register a user and a device, and upload prekeys and topic keys.
+message RegistrationBundle {
+    
+    // The info about the user and the device.
+    InternalUser info = 1;
+    
+    // The registration pin for the user.
+    uint32 pin = 2;
+    
+    // The new prekeys
+    repeated DevicePrekey preKeys = 3;
+    
+    // The topic keys
+    repeated TopicKey topicKeys = 4;
 }
 
 // The data stored on disk
@@ -52,5 +67,221 @@ message ManagementData {
     
     // The users allowed to register, index by their names
     map<string, AllowedUser> allowedUsers = 3;
+    
+    // A pair of device id and authentication token
+    message AuthToken {
+        
+        // The device identifier
+        bytes deviceKey = 1;
+        
+        // The authentication token for the device
+        bytes authToken = 2;
+    }
+    
+    repeated AuthToken authTokens = 4;
 }
 
+// A device of an internal user
+message UserDevice {
+    
+    // The public key of the device
+    bytes deviceKey = 1;
+    
+    // The time when the device was created (in seconds since 1.1.1970)
+    uint32 creationTime = 2;
+    
+    // Indicates if the device is active
+    bool isActive = 3;
+}
+
+message NotificationToken {
+    
+    // The type of notifications for this device.
+    enum NotificationType {
+        // No push capabilities for the device
+        PUSH_DISABLED = 0;
+        // The device is a regular iOS device
+        IOS_DEVICE = 1;
+        // The device is used for iOS development
+        IOS_DEVELOPMENT_DEVICE = 2;
+        // The device is a regular iOS device using a notification extension
+        IOS_NOTIFICATION_EXTENSION = 3;
+        // The device is a development iOS device using a notification extension
+        IOS_DEVELOPMENT_NOTIFICATION_EXTENSION = 4;
+    }
+    
+    // The type of push service to use for the device.
+    NotificationType pushType = 1;
+    
+    // The binary push token for notifications
+    bytes pushToken = 2;
+}
+
+// MARK: PreKeys
+
+// A device prekey is used to protect the exchange of topic prekeys.
+message DevicePrekey {
+    
+    // The public key of the device
+    bytes publicKey = 1;
+    
+    // The public key of the prekey
+    bytes preKey = 2;
+    
+    // The signature of the prekey, signed by the device key.
+    bytes signature = 3;
+}
+
+// The data needed to upload device prekeys to the server.
+message DevicePrekeyUploadRequest {
+    
+    // The public key of the user
+    bytes publicKey = 1;
+    
+    // The public key of the device
+    bytes deviceKey = 2;
+    
+    // The authentication token of the device
+    bytes authToken = 3;
+    
+    // The new prekeys
+    repeated DevicePrekey preKeys = 4;
+}
+
+// A list of prekeys for a device.
+message DevicePreKeyList {
+    
+    // The public key of the device.
+    bytes deviceKey = 1;
+    
+    // The number of keys available for the device.
+    uint32 remainingKeys = 2;
+    
+    // The prekeys of a device.
+    repeated DevicePrekey prekeys = 3;
+}
+
+// Prekeys for all devices of a user.
+message DevicePreKeyBundle {
+    
+    // The number of keys included in this bundle for each device.
+    uint32 keyCount = 1;
+    
+    // The keys for all devices.
+    repeated DevicePreKeyList devices = 2;
+}
+
+// A bundle to upload a number of topic keys
+message TopicKeyBundle {
+    
+    // The public key of the user
+    bytes publicKey = 1;
+    
+    // The public key of the device uploading the keys
+    bytes deviceKey = 2;
+    
+    // The authentication token of the device
+    bytes authToken = 3;
+    
+    // The topic keys
+    repeated TopicKey topicKeys = 4;
+    
+    // The list of messages to deliver to each device
+    repeated TopicKeyMessageList messages = 5;
+}
+
+// A message to a device with a new topic key.
+message TopicKey {
+    
+    // The public topic key
+    bytes publicKey = 1;
+    
+    // The signature of the topic key with the user identity key
+    bytes signature = 2;
+}
+
+// A list of topic keys
+message TopicKeyList {
+    
+    // The public topic key
+    repeated TopicKey keys = 1;
+}
+
+// A list of topic messages
+message TopicKeyMessageList {
+    
+    // The device receiving the messages
+    bytes deviceKey = 1;
+
+    // The messages for a device
+    repeated TopicKeyMessage messages = 2;
+}
+
+// A message to a device with a new topic key.
+message TopicKeyMessage {
+    
+    // The topic key
+    TopicKey topicKey = 1;
+    
+    // The prekey used for encryption.
+    bytes devicePreKey = 2;
+    
+    // The private topic key encrypted with the prekey.
+    bytes encryptedTopicKey = 3;
+}
+
+// A message to create or update a topic
+message Topic {
+    
+    // The public topic key of the topic creator, which serves as the unique id of the topic
+    bytes publicKey = 1;
+    
+    // The time when the topic message was created (in seconds since 1.1.1970)
+    uint32 creationTime = 2;
+    
+    // The public key of the topic creator, and the signature of the creator topic key (only set for topic creation)
+    TopicKey creatorKey = 3;
+    
+    // The public keys of all users allowed to read from and write to the topic
+    repeated KeyDistributionMessage members = 4;
+    
+    // The public keys of all users allowed to read from the topic
+    repeated KeyDistributionMessage readers = 5;
+    
+    // The time when the request was signed (in seconds since 1.1.1970)
+    uint32 timestamp = 6;
+
+    // The signature of the request data, signed by the creator topic key.
+    bytes signature = 7;
+    
+    // A message to distribute a topic key to a user
+    message KeyDistributionMessage {
+        
+        // The topic key of the receiving user
+        bytes receiverTopicKey = 1;
+        
+        // The identity key of the receiver, and the signature of the topic key (only set for topic creation)
+        TopicKey receiverKey = 2;
+        
+        // The encryption of the message key with the topic key
+        bytes encryptedMessageKey = 3;
+    }
+}
+
+message DeviceDownload {
+
+    // The new user info (only set if changes occured)
+    InternalUser userInfo = 1;
+    
+    // Messages about new or updated topics
+    repeated Topic topicUpdates = 2;
+    
+    // Messages with new topic keys
+    repeated TopicKeyMessage topicKeyMessages = 3;
+    
+    // The number of topic keys remaining for the user
+    uint32 remainingTopicKeys = 4;
+    
+    // The number of prekeys remaining for this device
+    uint32 remainingPreKeys = 5;
+}

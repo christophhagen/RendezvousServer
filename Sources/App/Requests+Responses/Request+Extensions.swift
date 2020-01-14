@@ -7,20 +7,32 @@
 
 import Foundation
 import Vapor
-
+import Ed25519
 
 extension Request {
+    
+    /**
+     Get the binary data of the request.
+     - Returns: The HTTP body data.
+     - Throws: `RendezvousError.invalidRequest`, if no body data was provided.
+     */
+    func body() throws -> Data {
+        guard let data = http.body.data else {
+            throw RendezvousError.invalidRequest
+        }
+        return data
+    }
     
     /**
      Search for a key in the request header, and throw an error if the key is missing.
      - Parameter header: The key of the header.
      - Returns: The value as a string.
-     - Throws: `RendezvousError.parameterMissingInRequest`, if the value is missing.
+     - Throws: `RendezvousError.invalidRequest`, if the value is missing.
      */
     private func get(header: HeaderKey) throws -> String {
         guard let value = http.headers.firstValue(name: .init(header.rawValue)) else {
             Log.log(info: "Missing HTTP header \(header) in request")
-            throw RendezvousError.parameterMissingInRequest
+            throw RendezvousError.invalidRequest
         }
         return value
     }
@@ -28,13 +40,13 @@ extension Request {
     /**
      Get a binary value from the request headers.
      - Parameter header: The key of the header.
-     - Throws: `RendezvousError.parameterMissingInRequest`, if the value is missing, or if it is not base64 encoded.
+     - Throws: `RendezvousError.invalidRequest`, if the value is missing, or if it is not base64 encoded.
      - Returns: The value as data.
      */
     private func binary(header: HeaderKey) throws -> Data {
         let value = try get(header: header)
         guard let binary = Data(base64Encoded: value) else {
-            throw RendezvousError.parameterMissingInRequest
+            throw RendezvousError.invalidRequest
         }
         return binary
     }
@@ -47,59 +59,99 @@ extension Request {
      - Throws: `RendezvousError` errors
      - Note: An authentication token is always `Management.authTokenLength` bytes of binary data, and is sent base64 encoded in requests.
      - Note: Possible Errors:
-     - `parameterMissingInRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
+     - `invalidRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
      */
     func authToken() throws -> Data {
         let token = try binary(header: .authToken)
-        guard token.count == Management.authTokenLength else {
-            throw RendezvousError.parameterMissingInRequest
+        guard token.count == Server.authTokenLength else {
+            throw RendezvousError.invalidRequest
         }
         return token
     }
     
     /**
      Get the user name from the request.
-     - Note:User names have a maximum length of `Management.maximumNameLength` characters.
+     - Note:User names have a maximum length of `Server.maximumNameLength` characters.
      - Returns: The user name.
      - Throws: `RendezvousError` errors
      - Note: Possible Errors:
-     - `parameterMissingInRequest`, if the request doesn't contain a user name, or if the name is longer than `Management.maximumNameLength` characters.
+     - `invalidRequest`, if the request doesn't contain a user name, or if the name is longer than `Server.maximumNameLength` characters.
      */
     func user() throws -> String {
         let name = try get(header: .username)
-        guard name.count >= Management.maximumNameLength else {
-            throw RendezvousError.parameterMissingInRequest
+        guard name.count <= Server.maximumNameLength else {
+            throw RendezvousError.invalidRequest
         }
         return name
     }
     
     /**
     Get the pin from the request.
-    - Note:Pins have a maximum length of 32 characters.
-    - Returns: The user name.
+    - Returns: The pin.
     - Throws: `RendezvousError` errors
     - Note: Possible Errors:
-    - `parameterMissingInRequest`, if the request doesn't contain a pin, or if the pin is not a valid number.
+    - `invalidRequest`, if the request doesn't contain a pin, or if the pin is not a valid number.
     */
     func pin() throws -> UInt32 {
         let value = try get(header: .pin)
-        guard let pin = UInt32(value), pin < Management.pinMaximum else {
-            throw RendezvousError.parameterMissingInRequest
+        guard let pin = UInt32(value), pin < Server.pinMaximum else {
+            throw RendezvousError.invalidRequest
         }
         return pin
     }
     
     /**
-     Get the public key from the request.
+    Get the count from the request.
+    - Returns: The count.
+    - Throws: `RendezvousError` errors
+    - Note: Possible Errors:
+    - `invalidRequest`, if the request doesn't contain a count, or if the count is not a valid number.
+    */
+    func count() throws -> Int {
+        let value = try get(header: .count)
+        guard let count = Int(value) else {
+            throw RendezvousError.invalidRequest
+        }
+        return count
+    }
+    
+    /**
+     Get the public key of the device from the request.
      - Returns: The public key in binary format.
      - Throws: `RendezvousError` errors
      - Note: Possible Errors:
-     - `parameterMissingInRequest`, if the request doesn't contain a key, or if the key has invalid length.
+     - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
      */
-    func key() throws -> PublicKey {
-        let key = try binary(header: .key)
-        guard key.count == Management.publicKeyLength else {
-            throw RendezvousError.parameterMissingInRequest
+    func devicePublicKey() throws -> Data {
+        return try key(header: .device)
+    }
+    
+    /**
+    Get the public key of the user from the request.
+    - Returns: The public key in binary format.
+    - Throws: `RendezvousError` errors
+    - Note: Possible Errors:
+    - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
+    */
+    func userPublicKey() throws -> Data {
+        return try key(header: .user)
+    }
+    
+    /**
+    Get the public key of the requested user from the request.
+    - Returns: The public key in binary format.
+    - Throws: `RendezvousError` errors
+    - Note: Possible Errors:
+    - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
+    */
+    func receiverPublicKey() throws -> Data {
+        return try key(header: .receiver)
+    }
+    
+    private func key(header: HeaderKey) throws -> Data {
+        let key = try binary(header: header)
+        guard key.count == Ed25519.PublicKey.keyLength else {
+            throw RendezvousError.invalidRequest
         }
         return key
     }

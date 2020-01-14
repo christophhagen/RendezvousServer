@@ -8,9 +8,6 @@
 import Foundation
 import Crypto
 
-typealias PublicKey = Data
-typealias PrivateKey = Data
-
 func timeInSeconds() -> UInt32 {
      return UInt32(Date().timeIntervalSince1970)
 }

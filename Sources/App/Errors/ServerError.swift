@@ -26,4 +26,7 @@ enum ServerError: Error {
     
     /// A file could not be read from disk.
     case fileReadFailed
+    
+    /// The configuration file is invalid
+    case invalidConfigurationFile
 }

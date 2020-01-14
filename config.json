@@ -1,0 +1,14 @@
+{
+    "keyId": "W46LT6J84P",
+    "teamId": "H8WR4M6QQ4",
+    "pathToPrivateKey": "AuthKey_W46LT6J84P.p8",
+    "apnsTopic": "christophhagen.CC",
+    "apnsUseSandbox": true,
+
+    "pathToDataFolder": "/Users/user/Development/Rendezvous/data",
+    "pathToServerData": "server.bin",
+    "logFilePath": "logs/vapor.log",
+    "isDevelopmentServer": true,
+    "shouldServeStaticFiles" : false
+
+}

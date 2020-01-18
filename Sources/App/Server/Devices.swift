@@ -76,7 +76,7 @@ extension Server {
         createDeviceData(for: newDevice.deviceKey)
         
         log(info: "User '\(userInfo.name)': New device registered")
-        #warning("Invalidate topic keys")
+        
         // Return the authentication token
         return authToken
     }
@@ -137,7 +137,7 @@ extension Server {
         set(userInfo: userInfo)
         
         log(info: "User '\(userInfo.name)': Device deleted")
-        #warning("TODO: Remove device data, topic messages and prekeys from storage")
+        try storage.deleteData(forDevice: oldDevice.deviceKey, of: userInfo.publicKey)
     }
     
 }

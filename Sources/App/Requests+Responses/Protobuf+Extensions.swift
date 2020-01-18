@@ -26,6 +26,22 @@ extension SwiftProtobuf.Message {
 
 extension RV_InternalUser: TimestampedProtobuf { }
 
-extension RV_DevicePrekey: SignedProtobuf, PublicKeyProtobuf { }
+extension RV_TopicMessage: SignedProtobuf { }
 
-extension RV_Topic: TimestampedProtobuf { }
+extension RV_Topic: TimestampedProtobuf {
+    
+    var publicKey: Data {
+        get {
+            guard indexOfMessageCreator < members.count else {
+                return Data()
+            }
+            return members[Int(indexOfMessageCreator)].signatureKey
+        }
+        set {
+            guard indexOfMessageCreator < members.count else {
+                return
+            }
+            members[Int(indexOfMessageCreator)].signatureKey = newValue
+        }
+    }
+}

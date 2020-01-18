@@ -31,6 +31,15 @@ final class Server: Logger {
     /// The number of bytes for an authentication token
     static let authTokenLength = 16
     
+    /// The length of a topic id
+    static let topicIdLength = 12
+    
+    /// The length of a message id
+    static let messageIdLength = 12
+    
+    /// The maximum length of message metadata
+    static let maximumMetadataLength = 100
+    
     // MARK: Private variables
     
     /// The interface with the file system
@@ -47,6 +56,12 @@ final class Server: Logger {
     
     /// The data to send to each internal device.
     private var deviceData: [Data : RV_DeviceDownload]
+    
+    /// The data last sent to each internal device (in case of delivery failure)
+    private var oldDeviceData: [Data : RV_DeviceDownload]
+    
+    /// The info about all topics currently available on the server
+    private var topics: [Data : RV_TopicState]
     
     /// The users which are allowed to register on the server, with their pins, the remaining tries, and the time until which they can register.
     private var usersAllowedToRegister: [String : RV_AllowedUser]
@@ -94,6 +109,8 @@ final class Server: Logger {
         self.internalUsers = [:]
         self.authTokens = [:]
         self.deviceData = [:]
+        self.oldDeviceData = [:]
+        self.topics = [:]
         
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
@@ -125,13 +142,15 @@ final class Server: Logger {
         self.internalUsers = [:]
         self.authTokens = [:]
         self.deviceData = [:]
+        self.oldDeviceData = [:]
+        self.topics = [:]
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
         
         object.internalUsers.forEach { internalUsers[$0.publicKey] = $0 }
         object.authTokens.forEach { authTokens[$0.deviceKey] = $0.authToken }
-        #warning("TODO: Load/add device data")
+        #warning("TODO: Load/add device data and topics")
     }
     
     /// Serialize the management data for storage on disk.
@@ -176,6 +195,7 @@ final class Server: Logger {
         self.internalUsers = [:]
         self.authTokens = [:]
         self.deviceData = [:]
+        self.oldDeviceData = [:]
     }
     
     /**
@@ -196,6 +216,21 @@ final class Server: Logger {
                 throw RendezvousError.authenticationFailed
         }
         return user
+    }
+    
+    /**
+    Check the authentication of a device.
+    
+    - Parameter device: The received device public key
+    - Parameter token: The received authentication token
+    - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
+    */
+    func authenticate(device: Data, token: Data) throws {
+        // Check if authentication is valid
+        guard let deviceToken = authTokens[device],
+            constantTimeCompare(deviceToken, token) else {
+                throw RendezvousError.authenticationFailed
+        }
     }
     
     // MARK: Internal state
@@ -259,6 +294,28 @@ final class Server: Logger {
     func userDevices(_ user: Data) -> [RV_UserDevice]? {
         internalUsers[user]?.devices
     }
+    
+    func add(topic: RV_Topic) {
+        topics[topic.topicID] = .with {
+            $0.info = topic
+            $0.chain = .with { chain in
+                chain.nextChainIndex = 0
+                chain.output = topic.topicID
+            }
+        }
+    }
+    
+    func update(chain: RV_TopicState.ChainState, for topic: Data) {
+        topics[topic]?.chain = chain
+    }
+    
+    func topic(id: Data) -> RV_TopicState? {
+        return topics[id]
+    }
+    
+    func add(topicMessage: RV_DeviceDownload.Message, for device: Data) {
+        deviceData[device]!.messages.append(topicMessage)
+    }
 
     func add(topicUpdate: RV_Topic, for device: Data) {
         deviceData[device]!.topicUpdates.append(topicUpdate)
@@ -292,8 +349,23 @@ final class Server: Logger {
         authTokens[device] != nil
     }
     
+    func getAndClearDeviceData(_ device: Data) -> RV_DeviceDownload {
+        let data = deviceData[device]!
+        deviceData[device] = .with {
+            $0.remainingPreKeys = data.remainingPreKeys
+            $0.remainingTopicKeys = data.remainingTopicKeys
+        }
+        oldDeviceData[device] = data
+        return data
+    }
+    
+    func oldDeviceData(_ device: Data) -> RV_DeviceDownload {
+        oldDeviceData[device]!
+    }
+    
     func createDeviceData(for device: Data) {
         deviceData[device] = .init()
+        oldDeviceData[device] = .init()
     }
     
     func createDeviceData(for device: Data, remainingPreKeys: UInt32, remainingTopicKeys: UInt32) {
@@ -301,6 +373,7 @@ final class Server: Logger {
             $0.remainingPreKeys = remainingPreKeys
             $0.remainingTopicKeys = remainingTopicKeys
         }
+        oldDeviceData[device] = .init()
     }
     
     func delete(device: Data) {

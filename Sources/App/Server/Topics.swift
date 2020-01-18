@@ -43,40 +43,53 @@ extension Server {
         let topic = try RV_Topic(validRequest: data)
         
         // Check if authentication is valid
-        let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
+        _ = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
         
-        // Check that the creation time matches the timestamp (for topic creation)
-        guard topic.hasCreatorKey,
-            topic.creationTime == topic.timestamp,
-            topic.creatorKey.publicKey == userKey else {
+        // Check that the topic fulfills basic criteria
+        guard topic.indexOfMessageCreator < topic.members.count,
+            topic.topicID.count == Server.topicIdLength else {
+                throw RendezvousError.invalidRequest
+        }
+        let admin = topic.members[Int(topic.indexOfMessageCreator)]
+        guard topic.creationTime == topic.timestamp,
+            admin.hasInfo, admin.role == .admin,
+            admin.info.userKey == userKey else {
             throw RendezvousError.invalidRequest
         }
         
-        // Check that the topic key signature is valid
-        let creatorKey = try! Ed25519.PublicKey(rawRepresentation: user.publicKey)
-        guard creatorKey.isValidSignature(topic.creatorKey.signature, for: topic.publicKey) else {
-            throw RendezvousError.invalidSignature
+        // Check that the topic doesn't exist yet, and that the topic request is valid
+        guard !storage.exists(topic: topic.topicID) else {
+            throw RendezvousError.resourceAlreadyExists
         }
-        
-        // Check that the topic request is valid
         try topic.isFreshAndSigned()
         
         // Check that all topic keys in the distribution messages have valid signatures,
         // and that all receivers are known.
-        for message in topic.members + topic.readers {
-            let key = message.receiverKey.publicKey
+        let members: [Data] = try topic.members.map { member in
+            guard member.hasInfo else {
+                throw RendezvousError.invalidRequest
+            }
+            if case .UNRECOGNIZED(_) = member.role {
+                throw RendezvousError.invalidRequest
+            }
+            let key = member.info.userKey
             guard userExists(key),
-                let receiverKey = try? Ed25519.PublicKey(rawRepresentation: key),
-                receiverKey.isValidSignature(message.receiverKey.signature, for: message.receiverTopicKey) else {
+                let receiverKey = try? key.toPublicKey(),
+                receiverKey.isValidSignature(member.info.signature, for: member.signatureKey + member.info.encryptionKey) else {
                     throw RendezvousError.invalidSignature
             }
+            return key
         }
         
         // Create the topic folder
+        try storage.create(topic: topic.topicID)
+        
+        // Add the topic globally
+        add(topic: topic)
         
         // Add the topic message to each device download bundle (except the sending device)
-        for message in topic.members + topic.readers {
-            for device in userDevices(message.receiverKey.publicKey)! {
+        members.forEach { member in
+            for device in userDevices(member)! {
                 guard device.deviceKey != deviceKey else { continue }
                 add(topicUpdate: topic, for: device.deviceKey)
             }

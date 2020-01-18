@@ -37,11 +37,12 @@ extension Server {
                                    device: preKeyRequest.deviceKey,
                                    token: preKeyRequest.authToken)
         
+        let deviceKey = try preKeyRequest.deviceKey.toPublicKey()
+        
         // Check the signature for each prekey
         try preKeyRequest.preKeys.forEach {
-            try $0.verifySignature()
-            guard $0.publicKey == preKeyRequest.deviceKey else {
-                throw RendezvousError.invalidKeyUpload
+            guard deviceKey.isValidSignature($0.signature, for: $0.preKey) else {
+                throw RendezvousError.invalidSignature
             }
         }
         

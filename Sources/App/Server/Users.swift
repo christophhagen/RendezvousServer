@@ -92,23 +92,23 @@ extension Server {
         guard bundle.info.devices.count == 1 else {
             throw RendezvousError.invalidRequest
         }
-        let deviceKey = bundle.info.devices[0].deviceKey
+        let deviceKeyData = bundle.info.devices[0].deviceKey
+        let deviceKey = try deviceKeyData.toPublicKey()
         
         // Check that the user info is fresh.
         try bundle.info.isFreshAndSigned()
         
         // Check the signature for each prekey
         try bundle.preKeys.forEach {
-            try $0.verifySignature()
-            guard $0.publicKey == deviceKey else {
-                throw RendezvousError.invalidKeyUpload
+            guard deviceKey.isValidSignature($0.signature, for: $0.preKey) else {
+                throw RendezvousError.invalidSignature
             }
         }
         
         // Check that all topic keys have valid signatures
         let userKey = try userKeyData.toPublicKey()
         for key in bundle.topicKeys {
-            guard userKey.isValidSignature(key.signature, for: key.publicKey) else {
+            guard userKey.isValidSignature(key.signature, for: key.signatureKey + key.encryptionKey) else {
                 throw RendezvousError.invalidSignature
             }
         }
@@ -119,7 +119,7 @@ extension Server {
         // Add the prekeys to the device
         let preKeyCount = try storage.store(
             preKeys: bundle.preKeys,
-            for: deviceKey,
+            for: deviceKeyData,
             of: userKeyData)
         
         // Store the topic keys
@@ -133,10 +133,10 @@ extension Server {
         
         // Create an authentication token
         let authToken = makeAuthToken()
-        set(authToken: authToken, for: deviceKey)
+        set(authToken: authToken, for: deviceKeyData)
         
         // Initialize the device data with the key counts
-        createDeviceData(for: deviceKey, remainingPreKeys: preKeyCount, remainingTopicKeys: topicKeyCount)
+        createDeviceData(for: deviceKeyData, remainingPreKeys: preKeyCount, remainingTopicKeys: topicKeyCount)
         
         didChangeData()
         log(debug: "Registered user '\(bundle.info.name)' with device and keys")

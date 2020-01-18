@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Crypto
 
 /**
  
@@ -16,8 +17,6 @@ import Foundation
         userIdentityKey/
             prekeys/
                 deviceIdentityKey // The prekeys of a device
-            messages/
-                deviceIdentityKey // The topic messages for a device
             topickeys // The available topic keys of a user
     topicdata/
         topicID/
@@ -131,7 +130,7 @@ final class Storage: Logger {
     
     /**
      The url to the folder of a user.
-     - Parameter user: The base32 encoded public key of the user.
+     - Parameter user: The public key of the user.
      - Returns: The url of the user folder.
      */
     private func userURL(_ user: Data) -> URL {
@@ -140,13 +139,18 @@ final class Storage: Logger {
     
     /**
      The url containing available topic keys of the user.
-     - Parameter user: The base32 encoded public key of the user.
+     - Parameter user: The public key of the user.
      - Returns: The url of the file containing the topic keys.
      */
     private func userTopicKeyURL(_ user: Data) -> URL {
         userURL(user).appendingPathComponent("topickeys")
     }
     
+    /**
+    The url of the folder containing the pre keys of the user's devices.
+    - Parameter user: The public key of the user.
+    - Returns: The url of the folder containing the pre keys.
+    */
     private func userPreKeyURL(_ user: Data) -> URL {
         userURL(user).appendingPathComponent("prekeys")
     }
@@ -226,6 +230,17 @@ final class Storage: Logger {
         try removeItem(at: url)
     }
     
+    /**
+    Delete all data of a device.
+     
+    - Parameter user: The public key of the user.
+    - Parameter device: The public key of the device.
+    - Throws: `ServerError.deletionFailed`, if the prekeys could not be deleted.
+    */
+    func deleteData(forDevice device: Data, of user: Data) throws {
+        try self.deletePreKeys(for: device, of: user)
+    }
+    
     // MARK: PreKeys
     
     /**
@@ -249,7 +264,7 @@ final class Storage: Logger {
             try write(preKeys: preKeys, to: url)
             return UInt32(preKeys.count)
         }
-        let oldKeys = try getPrekeys(at: url)
+        let oldKeys = try getPreKeys(at: url)
         try write(preKeys: oldKeys + preKeys, to: url)
         return UInt32(oldKeys.count + preKeys.count)
     }
@@ -297,7 +312,7 @@ final class Storage: Logger {
                 preKeys[device] = []
                 continue
             }
-            preKeys[device] = try getPrekeys(at: url)
+            preKeys[device] = try getPreKeys(at: url)
         }
         
         // Find the maximum amount of prekeys
@@ -334,9 +349,21 @@ final class Storage: Logger {
         - `ServerError.fileReadFailed`, if the file could not be read.
         - `BinaryEncodingError`, if the data is not a valid protobuf.
      */
-    private func getPrekeys(at url: URL) throws -> [RV_DevicePrekey] {
+    private func getPreKeys(at url: URL) throws -> [RV_DevicePrekey] {
         let data = try self.data(at: url)
         return try RV_DevicePreKeyList(serializedData: data).prekeys
+    }
+    
+    /**
+    Delete all prekeys of a device.
+     
+    - Parameter user: The public key of the user.
+    - Parameter device: The public key of the device.
+    - Throws: `ServerError.deletionFailed`, if the prekeys could not be deleted.
+    */
+    private func deletePreKeys(for device: Data, of user: Data) throws {
+        let url = self.devicePreKeyURL(device, of: user)
+        try removeItem(at: url)
     }
     
     // MARK: Topic keys
@@ -347,10 +374,11 @@ final class Storage: Logger {
      - Parameter topicKeys: The topic keys to store.
      - Parameter user: The public key of the user.
      - Returns: The topic keys available for the user.
-     - Throws: `ServerError`, `BinaryEncodingError`
+     - Throws: `ServerError`, `BinaryEncodingError`, `BinaryDecodingError`
      
      - Note: Possible errors:
-        - `BinaryEncodingError`, if the topic keys serialization fails, or if the existing data is not a valid protobuf.
+        - `BinaryEncodingError`, if the topic keys serialization fails,
+        - `BinaryDecodingError`, if the existing data is not a valid protobuf.
         - `ServerError.fileWriteFailed`, if the topic keys data could not be written.
         - `ServerError.fileReadFailed`, if the file could not be read.
      */
@@ -371,14 +399,15 @@ final class Storage: Logger {
      
      - Parameter user: The user for which to get the topic key.
      - Returns: The topic key.
-     - Throws: `RendezvousError`, `ServerError`, `BinaryEncodingError`
+     - Throws: `RendezvousError`, `ServerError`, `BinaryEncodingError`, `BinaryEncodingError`
      
      - Note: Possible errors:
         - `RendezvousError.resourceNotAvailable`, if no topic key exists.
         - `ServerError.fileWriteFailed`, if the data could not be written.
         - `ServerError.deletionFailed`, if the file/folder could not be deleted
         - `ServerError.fileReadFailed`, if the file could not be read.
-        - `BinaryEncodingError`, if the data is not a valid protobuf, or if the serialization fails.
+        - `BinaryDecodingError`, if the data is not a valid protobuf, or if the serialization fails.
+        - `BinaryEncodingError`, if the serialization fails.
      */
     func getTopicKey(of user: Data) throws -> RV_TopicKey {
         let url = userTopicKeyURL(user)
@@ -395,7 +424,7 @@ final class Storage: Logger {
         try write(topicKeys: oldKeys, to: url)
         return key
     }
-    
+
     /**
      Write topic keys to a url.
      
@@ -449,6 +478,15 @@ final class Storage: Logger {
         try createFolder(at: dataURL)
     }
     
+    /**
+     Check if a topic already exists.
+     - Parameter topic: The topic id.
+     - Returns: `true`, if the topic exists.
+     */
+    func exists(topic: Data) -> Bool {
+        return dataExists(at: topicURL(topic))
+    }
+    
     // MARK: Management data
     
     /**
@@ -463,6 +501,7 @@ final class Storage: Logger {
     
     /**
      Get the management data on disk.
+     
      - Returns: The data, if it exists.
      - Throws: `ServerError.fileReadFailed`, if the data could not be read.
      */
@@ -476,6 +515,7 @@ final class Storage: Logger {
     
     /**
      Delete the management data from disk.
+     
      - Throws: `ServerError.deletionFailed`, if the data could not be deleted
      */
     func deleteManagementData() throws {
@@ -484,6 +524,78 @@ final class Storage: Logger {
             return
         }
         try removeItem(at: url)
+    }
+    
+    // MARK: Messages
+    
+    /**
+     Store a file in a topic.
+     
+     - Parameter file: The file data to store
+     - Parameter id: The file id
+     - Parameter topic: The topic id
+     
+     - Throws: `ServerError`, `RendezvousError`
+     
+     - Note: Possible errors:
+        - `ServerError.fileWriteFailed`, if the data could not be written.
+        - `RendezvousError.resourceAlreadyExists`, if the message already exists
+     */
+    func store(file: Data, with id: Data, in topic: Data) throws {
+        let url = topicDataURL(topic, message: id)
+        guard !dataExists(at: url) else {
+            throw RendezvousError.resourceAlreadyExists
+        }
+        try write(data: file, to: url)
+    }
+    
+    /**
+     Store a message in a message chain.
+     
+     - Parameter message: The message to store
+     - Parameter topic: The topic id
+     - Parameter chainIndex: The current message index of the chain
+     - Parameter output: The previous output of the chain
+     
+     - Throws: `ServerError `, `BinaryDecodingError`, `BinaryEncodingError`, `CryptoError`
+     
+     - Note: Possible errors:
+        - `ServerError.fileReadFailed`, if the file could not be read.
+        - `BinaryDecodingError` if protobuf decoding fails.
+        - `CryptoError`, if the hash for the next output could not be calculated
+        - `BinaryEncodingError` if protobuf encoding fails.
+     */
+    func store(message: RV_TopicMessage, in topic: Data, with chainIndex: UInt32, and output: Data) throws -> Data {
+        let url = topicURL(topic, chainIndex: chainIndex)
+        var chain = try getMessageChain(at: url)
+        
+        let newOutput = try SHA256.hash(output + message.signature)
+        chain.messages.append(message)
+        chain.output = newOutput
+        let data = try chain.serializedData()
+        try write(data: data, to: url)
+        return newOutput
+    }
+    
+    /**
+     Get a message chain stored at a url.
+     
+     - Parameter url: The url where the chain is stored.
+     - Returns: The message chain.
+     
+     - Throws: `ServerError `, `BinaryDecodingError`
+     
+     - Note: Possible errors:
+        - `ServerError.fileReadFailed`, if the file could not be read.
+        - `BinaryDecodingError` if decoding fails.
+     */
+    private func getMessageChain(at url: URL) throws -> RV_MessageChain {
+        guard dataExists(at: url) else {
+            // Create new file
+            return .init()
+        }
+        let data = try self.data(at: url)
+        return try .init(serializedData: data)
     }
     
     // MARK: Basic functions
@@ -545,7 +657,7 @@ final class Storage: Logger {
     /**
      Delete a file or folder.
      - Parameter url: The url to the file or folder
-     - Throws: `ServerError.deletionFailed`, if the file/folder could not be deleted
+     - Throws: `ServerError.deletionFailed`, if the file/folder could not be deleted.
      */
     private func removeItem(at url: URL) throws {
         guard fm.fileExists(atPath: url.path) else {

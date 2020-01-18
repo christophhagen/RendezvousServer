@@ -68,7 +68,7 @@ extension Server {
         
         // Extract the user and check that it doesn't exist yet
         let name = try request.user()
-        guard userExists(name) else {
+        guard !userExists(name) else {
             throw RendezvousError.resourceAlreadyExists
         }
         

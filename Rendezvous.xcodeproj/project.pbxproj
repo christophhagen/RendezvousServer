@@ -28,6 +28,7 @@
 		CE1E034B23C65CD600F15FD3 /* TimestampedProtobuf.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1E034A23C65CD600F15FD3 /* TimestampedProtobuf.swift */; };
 		CE5FAA5423CE2BB1001B9F1B /* Users.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5FAA5323CE2BB1001B9F1B /* Users.swift */; };
 		CE5FAA5623CE30B1001B9F1B /* Admin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5FAA5523CE30B1001B9F1B /* Admin.swift */; };
+		CE5FAA6C23CF692A001B9F1B /* Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5FAA6B23CF692A001B9F1B /* Messages.swift */; };
 		CE8A48A923CDD4040097D974 /* Topics.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48A823CDD4040097D974 /* Topics.swift */; };
 		CE8A48AB23CDD59D0097D974 /* TopicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */; };
 		CE8A48AD23CDD5D00097D974 /* Misc.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A48AC23CDD5D00097D974 /* Misc.swift */; };
@@ -4354,6 +4355,7 @@
 		CE1E034A23C65CD600F15FD3 /* TimestampedProtobuf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimestampedProtobuf.swift; sourceTree = "<group>"; };
 		CE5FAA5323CE2BB1001B9F1B /* Users.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Users.swift; sourceTree = "<group>"; };
 		CE5FAA5523CE30B1001B9F1B /* Admin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Admin.swift; sourceTree = "<group>"; };
+		CE5FAA6B23CF692A001B9F1B /* Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Messages.swift; sourceTree = "<group>"; };
 		CE8A48A823CDD4040097D974 /* Topics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Topics.swift; sourceTree = "<group>"; };
 		CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicKeys.swift; sourceTree = "<group>"; };
 		CE8A48AC23CDD5D00097D974 /* Misc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Misc.swift; sourceTree = "<group>"; };
@@ -5895,6 +5897,7 @@
 			children = (
 				OBJ_13 /* Crypto.swift */,
 				OBJ_14 /* Log.swift */,
+				CE8A48AC23CDD5D00097D974 /* Misc.swift */,
 			);
 			path = Misc;
 			sourceTree = "<group>";
@@ -6024,16 +6027,16 @@
 		OBJ_19 /* Server */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_20 /* Config.swift */,
 				CE5FAA5523CE30B1001B9F1B /* Admin.swift */,
-				OBJ_21 /* Server.swift */,
-				CE5FAA5323CE2BB1001B9F1B /* Users.swift */,
+				OBJ_20 /* Config.swift */,
 				CE8A48B023CDD7940097D974 /* Devices.swift */,
+				CE5FAA6B23CF692A001B9F1B /* Messages.swift */,
 				CE8A48AE23CDD7290097D974 /* PreKeys.swift */,
-				CE8A48A823CDD4040097D974 /* Topics.swift */,
-				CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */,
+				OBJ_21 /* Server.swift */,
 				OBJ_24 /* Storage.swift */,
-				CE8A48AC23CDD5D00097D974 /* Misc.swift */,
+				CE8A48AA23CDD59D0097D974 /* TopicKeys.swift */,
+				CE8A48A823CDD4040097D974 /* Topics.swift */,
+				CE5FAA5323CE2BB1001B9F1B /* Users.swift */,
 			);
 			path = Server;
 			sourceTree = "<group>";
@@ -10845,6 +10848,7 @@
 				CE1E034723C64B2C00F15FD3 /* ConfigError.swift in Sources */,
 				CE5FAA5423CE2BB1001B9F1B /* Users.swift in Sources */,
 				CE1E034323C6394400F15FD3 /* SignedProtobuf.swift in Sources */,
+				CE5FAA6C23CF692A001B9F1B /* Messages.swift in Sources */,
 				OBJ_944 /* Storage.swift in Sources */,
 				OBJ_945 /* boot.swift in Sources */,
 				OBJ_946 /* configure.swift in Sources */,

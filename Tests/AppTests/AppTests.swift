@@ -11,6 +11,5 @@ final class AdminTests : XCTestCase {
     func testNothing() throws {
         
     }
-
     
 }

@@ -25,7 +25,7 @@ extension Server {
         // Check that all topic keys have valid signatures
         let userKey = try user.publicKey.toPublicKey()
         for key in bundle.topicKeys {
-            guard userKey.isValidSignature(key.signature, for: key.publicKey) else {
+            guard userKey.isValidSignature(key.signature, for: key.signatureKey + key.encryptionKey) else {
                 throw RendezvousError.invalidKeyUpload
             }
         }
@@ -36,9 +36,9 @@ extension Server {
         }
         
         // Check that each receiver will get all topic key messages
-        let keys = Set(bundle.topicKeys.map { $0.publicKey })
+        let keys = Set(bundle.topicKeys.map { $0.signatureKey })
         for receiver in bundle.messages {
-            guard Set(receiver.messages.map { $0.topicKey.publicKey }) == keys else {
+            guard Set(receiver.messages.map { $0.topicKey.signatureKey }) == keys else {
                 throw RendezvousError.invalidKeyUpload
             }
         }
@@ -97,6 +97,54 @@ extension Server {
         }
         // Send the key to the client
         return try topicKey.serializedData()
+    }
+    
+    /**
+     Get topic keys for multiple users.
+     
+     - Parameter request: The received POST request.
+     - Returns: The key serialized in an `RV_TopicKeyResponse`
+     - Throws: `RendezvousError`, `ServerError`, `BinaryEncodingError`
+     
+     - Note: The request must contain a valid `RV_TopicKeyRequest` in the HTTP body.
+     
+     - Note: Possible errors:
+         - `RendezvousError.invalidRequest`, if the body is not a valid request.
+         - `RendezvousError.authenticationFailed`, if the user or device doesn't exist, or the token is invalid.
+         - `BinaryEncodingError`, if the serialization fails.
+     */
+    func getTopicKeys(_ request: Request) throws -> Data {
+        let body = try request.body()
+        let request = try RV_TopicKeyRequest(validRequest: body)
+        
+        // Check if authentication is valid
+        _ = try authenticateDevice(user: request.publicKey, device: request.deviceKey, token: request.authToken)
+        
+        let keys = request.users.compactMap { userKey -> RV_TopicKeyResponse.User? in
+            // Check if user exists
+            guard let user = self.user(with: userKey) else {
+                return nil
+            }
+            
+            // Get a topic key
+            guard let topicKey = try? storage.getTopicKey(of: userKey) else {
+                return nil
+            }
+            
+            // Decrease the available count
+            for device in user.devices {
+                decrementRemainingTopicKeys(for: device.deviceKey)
+            }
+            return .with {
+                $0.publicKey = userKey
+                $0.topicKey = topicKey
+            }
+        }
+        
+        let response = RV_TopicKeyResponse.with {
+            $0.users = keys
+        }
+        return try response.serializedData()
     }
     
 }

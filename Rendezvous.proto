@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package RV;
 
+// MARK: - Users
+
 // The information about a user allowed to register with the server
 message AllowedUser {
     
@@ -40,6 +42,8 @@ message InternalUser {
     bytes signature = 6;
 }
 
+// MARK: - Registration
+
 // A bundle to register a user and a device, and upload prekeys and topic keys.
 message RegistrationBundle {
     
@@ -56,30 +60,7 @@ message RegistrationBundle {
     repeated TopicKey topicKeys = 4;
 }
 
-// The data stored on disk
-message ManagementData {
-    
-    // The administrator authentication token
-    bytes adminToken = 1;
-    
-    // The registered users who store their data on the server
-    repeated InternalUser internalUsers = 2;
-    
-    // The users allowed to register, index by their names
-    map<string, AllowedUser> allowedUsers = 3;
-    
-    // A pair of device id and authentication token
-    message AuthToken {
-        
-        // The device identifier
-        bytes deviceKey = 1;
-        
-        // The authentication token for the device
-        bytes authToken = 2;
-    }
-    
-    repeated AuthToken authTokens = 4;
-}
+// MARK: - Devices
 
 // A device of an internal user
 message UserDevice {
@@ -94,6 +75,42 @@ message UserDevice {
     bool isActive = 3;
 }
 
+// The new data for a device to download
+message DeviceDownload {
+
+    // The new user info (only set if changes occured)
+    InternalUser userInfo = 1;
+    
+    // Messages about new or updated topics
+    repeated Topic topicUpdates = 2;
+    
+    // Messages with new topic keys
+    repeated TopicKeyMessage topicKeyMessages = 3;
+    
+    // New messages in topics
+    repeated Message messages = 4;
+    
+    // The number of topic keys remaining for the user
+    uint32 remainingTopicKeys = 5;
+    
+    // The number of prekeys remaining for this device
+    uint32 remainingPreKeys = 6;
+    
+    // A new message in a topic
+    message Message {
+        
+        // The topic id
+        bytes topicId = 1;
+        
+        // The state of the chain after the message
+        TopicState.ChainState chain = 2;
+        
+        // The actual message
+        TopicMessage content = 3;
+    }
+}
+
+// A push token for a device
 message NotificationToken {
     
     // The type of notifications for this device.
@@ -117,19 +134,16 @@ message NotificationToken {
     bytes pushToken = 2;
 }
 
-// MARK: PreKeys
+// MARK: - PreKeys
 
 // A device prekey is used to protect the exchange of topic prekeys.
 message DevicePrekey {
-    
-    // The public key of the device
-    bytes publicKey = 1;
-    
+
     // The public key of the prekey
-    bytes preKey = 2;
+    bytes preKey = 1;
     
     // The signature of the prekey, signed by the device key.
-    bytes signature = 3;
+    bytes signature = 2;
 }
 
 // The data needed to upload device prekeys to the server.
@@ -171,6 +185,28 @@ message DevicePreKeyBundle {
     repeated DevicePreKeyList devices = 2;
 }
 
+// MARK: - Topic keys
+
+// A message to a device with a new topic key.
+message TopicKey {
+    
+    // The signature key for message signing
+    bytes signatureKey = 1;
+    
+    // The key used to encrypt the message key
+    bytes encryptionKey = 2;
+    
+    // The signature of (signatureKey | encryptionKey) with the user key
+    bytes signature = 3;
+}
+
+// A list of topic keys
+message TopicKeyList {
+    
+    // The public topic key
+    repeated TopicKey keys = 1;
+}
+
 // A bundle to upload a number of topic keys
 message TopicKeyBundle {
     
@@ -190,21 +226,52 @@ message TopicKeyBundle {
     repeated TopicKeyMessageList messages = 5;
 }
 
-// A message to a device with a new topic key.
-message TopicKey {
-    
-    // The public topic key
-    bytes publicKey = 1;
-    
-    // The signature of the topic key with the user identity key
-    bytes signature = 2;
+// A request to get topic keys for multiple users
+message TopicKeyRequest {
+
+    // The public key of the user
+   bytes publicKey = 1;
+   
+   // The public key of the device
+   bytes deviceKey = 2;
+   
+   // The authentication token of the device
+   bytes authToken = 3;
+   
+   // The new prekeys
+   repeated bytes users = 4;
 }
 
-// A list of topic keys
-message TopicKeyList {
+// The response to a topic key request
+message TopicKeyResponse {
+
+    // The users for which topic keys where requested
+    repeated User users = 1;
     
-    // The public topic key
-    repeated TopicKey keys = 1;
+    // The topic key of a user
+    message User {
+        
+        // The public key of the user
+        bytes publicKey = 1;
+        
+        // The requested topic key of the user
+        TopicKey topicKey = 2;
+    }
+}
+
+// MARK: - Topic key messages
+
+// A message to a device with a new topic key.
+message TopicKeyMessage {
+    
+    // The topic key
+    TopicKey topicKey = 1;
+    
+    // The prekey used for encryption.
+    bytes devicePreKey = 2;
+    
+    // The keys (signatureKey | encryptionKey) encrypted with the prekey.
+    bytes encryptedTopicKeys = 3;
 }
 
 // A list of topic messages
@@ -217,71 +284,167 @@ message TopicKeyMessageList {
     repeated TopicKeyMessage messages = 2;
 }
 
-// A message to a device with a new topic key.
-message TopicKeyMessage {
-    
-    // The topic key
-    TopicKey topicKey = 1;
-    
-    // The prekey used for encryption.
-    bytes devicePreKey = 2;
-    
-    // The private topic key encrypted with the prekey.
-    bytes encryptedTopicKey = 3;
-}
+// MARK: - Topics
 
 // A message to create or update a topic
 message Topic {
     
-    // The public topic key of the topic creator, which serves as the unique id of the topic
-    bytes publicKey = 1;
+    // The unique id of the topic
+    bytes topicId = 1;
     
     // The time when the topic message was created (in seconds since 1.1.1970)
     uint32 creationTime = 2;
     
-    // The public key of the topic creator, and the signature of the creator topic key (only set for topic creation)
-    TopicKey creatorKey = 3;
+    // The index of the admin in the member list who signed this topic message.
+    uint32 indexOfMessageCreator = 3;
     
-    // The public keys of all users allowed to read from and write to the topic
-    repeated KeyDistributionMessage members = 4;
-    
-    // The public keys of all users allowed to read from the topic
-    repeated KeyDistributionMessage readers = 5;
+    // The keys and roles of all group members
+    repeated MemberInfo members = 4;
     
     // The time when the request was signed (in seconds since 1.1.1970)
-    uint32 timestamp = 6;
+    uint32 timestamp = 5;
 
-    // The signature of the request data, signed by the creator topic key.
-    bytes signature = 7;
+    // The signature of the request data, signed with the admin's topic signature key.
+    bytes signature = 6;
     
     // A message to distribute a topic key to a user
-    message KeyDistributionMessage {
+    message MemberInfo {
         
-        // The topic key of the receiving user
-        bytes receiverTopicKey = 1;
+        // The topic signature key of the user
+        bytes signatureKey = 1;
         
-        // The identity key of the receiver, and the signature of the topic key (only set for topic creation)
-        TopicKey receiverKey = 2;
+        // The role of the user
+        Role role = 2;
         
-        // The encryption of the message key with the topic key
+        // The encryption of the message key with the user's topic encryption key
         bytes encryptedMessageKey = 3;
+        
+        // Receiver identity key, theand the signature of the topic key (only set for topic creation)
+        CreationInfo info = 4;
+        
+        // The permissions of each member
+        enum Role {
+            // Admins can add and delete other members and assign roles.
+            ADMIN = 0;
+            // Participants can read and write
+            PARTICIPANT = 1;
+            // Observers can only read
+            OBSERVER = 2;
+        }
+        
+        // Information only added when creating a new topic.
+        message CreationInfo {
+            
+            // The identity key of the user
+            bytes userKey = 1;
+            
+            // The key used to encrypt the message key
+            bytes encryptionKey = 2;
+            
+            // The signature of (signatureKey | encryptionKey) with the user key
+            bytes signature = 3;
+        }
     }
 }
 
-message DeviceDownload {
-
-    // The new user info (only set if changes occured)
-    InternalUser userInfo = 1;
+// A verifiable chain of messages in a topic.
+message MessageChain {
     
-    // Messages about new or updated topics
-    repeated Topic topicUpdates = 2;
+    // All messages in the chain
+    repeated TopicMessage messages = 1;
     
-    // Messages with new topic keys
-    repeated TopicKeyMessage topicKeyMessages = 3;
-    
-    // The number of topic keys remaining for the user
-    uint32 remainingTopicKeys = 4;
-    
-    // The number of prekeys remaining for this device
-    uint32 remainingPreKeys = 5;
+    // The result of iteratively hashing the message signatures: h_n = h(h_n-1 | h(s_n)); h_0 = id
+    bytes output = 2;
 }
+
+// The current state of a topic
+message TopicState {
+
+    // The info about the topic
+    Topic info = 1;
+    
+    // The current chain state
+    ChainState chain = 2;
+    
+    // The current state of the message chain
+    message ChainState {
+    
+        // The chain index for the next message
+        uint32 nextChainIndex = 1;
+    
+        // The current output of the chain
+        bytes output = 2;
+    }
+}
+
+// MARK: - Topic messages
+
+// A request to upload a message
+message TopicMessageUpload {
+    
+    // The public key of the device
+    bytes deviceKey = 1;
+    
+    // The authentication token of the device
+    bytes authToken = 2;
+    
+    // The id of the topic
+    bytes topicId = 3;
+    
+    // The message to add
+    TopicMessage message = 4;
+    
+    // The data of the file to write to disk
+    bytes file = 5;
+}
+
+// A message posted to a topic
+message TopicMessage {
+
+    // The sender's index in the list of topic members
+    uint32 indexInMemberList = 1;
+    
+    // The id of the file added to the topic
+    bytes id = 2;
+    
+    // The hash of the encrypted file
+    bytes hash = 3;
+    
+    // The authentication tag of the file
+    bytes tag = 4;
+    
+    // Metadata encrypted with the message key.
+    bytes metadata = 5;
+
+    // The signature of the whole message with the signature key
+    bytes signature = 6;
+}
+
+// MARK: Server data
+
+// The data stored on disk
+message ManagementData {
+    
+    // The administrator authentication token
+    bytes adminToken = 1;
+    
+    // The registered users who store their data on the server
+    repeated InternalUser internalUsers = 2;
+    
+    // The users allowed to register, index by their names
+    map<string, AllowedUser> allowedUsers = 3;
+    
+    // A pair of device id and authentication token
+    message AuthToken {
+        
+        // The device identifier
+        bytes deviceKey = 1;
+        
+        // The authentication token for the device
+        bytes authToken = 2;
+    }
+    
+    // The authentication tokens of all devices
+    repeated AuthToken authTokens = 4;
+}
+

@@ -11,53 +11,6 @@ import Vapor
 extension Server {
     
     /**
-     Handle a request to create a new user.
-     
-     - Parameter request: The received request.
-     - Throws: `RendezvousError` and `ServerError` errors
-     
-     - Note: Possible errors:
-        - `RendezvousError.invalidRequest`, if the pin, username or public key are missing.
-        - `RendezvousError.authenticationFailed`, if the pin or username is invalid.
-        - `ServerError.deletionFailed`, if an existing folder could not be deleted
-        - `ServerError.folderCreationFailed`, if the user folder couldn't be created.
-     - Note: The request must contain the pin given to the user in the HTTP headers
-     - Note: The request must contain a protobuf object of type `RV_InternalUser` (with no devices) in the HTTP body.
-     */
-    func registerUser(_ request: Request) throws {
-        // Get the data from the request.
-        let data = try request.body()
-        let user = try RV_InternalUser(validRequest: data)
-        
-        // Extract the user pin and check that it can register
-        let pin = try request.pin()
-        guard canRegister(user: user.name, pin: pin) else {
-            throw RendezvousError.authenticationFailed
-        }
-        
-        // Check that no device is present
-        guard user.devices.count == 0 else {
-            throw RendezvousError.invalidRequest
-        }
-        
-        // Check that the request is fresh.
-        try user.isFreshAndSigned()
-        
-        
-        // Create the file structure for the user
-        try storage.create(user: user.publicKey)
-        
-        // Add the user
-        set(userInfo: user)
-        
-        // Remove the user from the pending users.
-        remove(allowedUser: user.name)
-        
-        didChangeData()
-        log(debug: "Registered user '\(user.name)'")
-    }
-       
-    /**
      Register a user with a device, prekeys, and topic keys.
      
      - Parameter request: The received POST request.
@@ -77,7 +30,7 @@ extension Server {
          - `ServerError.folderCreationFailed`, if the user folder couldn't be created.
          - `ServerError.fileWriteFailed`, if the prekey or topic key data could not be written.
      */
-    func registerUserWithDeviceAndKeys(_ request: Request) throws -> Data {
+    func registerUser(_ request: Request) throws -> Data {
         // Get the data from the request.
         let data = try request.body()
         let bundle = try RV_RegistrationBundle(validRequest: data)

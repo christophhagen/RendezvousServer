@@ -35,9 +35,6 @@ public func routes(_ router: Router) throws {
     // Register a new user with the given pin
     router.postCatching("user", "register", call: server.registerUser)
     
-    // Register a user with a device, prekeys, and topic keys.
-    router.postCatching("user", "full", call: server.registerUserWithDeviceAndKeys)
-    
     // Get the current user info
     router.getCatching("user", "info", call: server.userInfo)
     

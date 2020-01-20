@@ -179,14 +179,6 @@ final class Server: Logger {
         }
     }
     
-    /**
-     Delete all server data.
-     */
-    func deleteAllServerData(_ request: Request) throws {
-        try checkAdminAccess(request)
-        try reset()
-    }
-    
     func reset() throws {
         log(warning: "Deleting all server data")
         try storage.deleteAllData()

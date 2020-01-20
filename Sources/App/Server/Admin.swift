@@ -47,13 +47,22 @@ extension Server {
     }
     
     /**
+     Delete all server data.
+     
+     - Parameter request: The received GET request.
+     */
+    func deleteAllServerData(_ request: Request) throws {
+        try checkAdminAccess(request)
+        try reset()
+    }
+    
+    
+    /**
      Allow a user to register on the server.
      
-     - Note: The request must contain in the HTTP headers:
-        - The authentication token of the admin.
-        - The name of the user to register.
+     - Note: The request must contain the authentication token of the admin and the name of the user in the HTTP headers.
      
-     - Parameter request: The received request.
+     - Parameter request: The received POST request.
      - Returns: The serialized data of the user (`RV_AllowedUser`)
      - Throws: `RendezvousError` errors, `ServerError` errors
      

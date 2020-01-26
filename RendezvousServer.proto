@@ -33,13 +33,30 @@ message InternalUser {
     string name = 3;
 
     // The devices of the user, must be sorted in ascending order by their creationTime.
-    repeated UserDevice devices = 4;
+    repeated Device devices = 4;
 
     // The time when the data was signed
     uint32 timestamp = 5;
+    
+    // The server which handles the notifications
+    string notificationServer = 6;
 
     // The signature of the user info, signed by the user identity key.
-    bytes signature = 6;
+    bytes signature = 7;
+    
+    // A device of an internal user
+    message Device {
+
+        // The public key of the device
+        bytes deviceKey = 1;
+
+        // The time when the device was created (in seconds since 1.1.1970)
+        uint32 creationTime = 2;
+
+        // Indicates if the device is active
+        bool isActive = 3;
+    }
+
 }
 
 // MARK: - Registration
@@ -61,19 +78,6 @@ message RegistrationBundle {
 }
 
 // MARK: - Devices
-
-// A device of an internal user
-message UserDevice {
-
-    // The public key of the device
-    bytes deviceKey = 1;
-
-    // The time when the device was created (in seconds since 1.1.1970)
-    uint32 creationTime = 2;
-
-    // Indicates if the device is active
-    bool isActive = 3;
-}
 
 // The new data for a device to download
 message DeviceDownload {
@@ -446,6 +450,9 @@ message ManagementData {
 
     // The authentication tokens of all devices
     repeated AuthToken authTokens = 4;
+    
+    // The server to use for push notifications
+    string notificationServer = 5;
 }
 
 // All data of a client

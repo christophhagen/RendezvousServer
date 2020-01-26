@@ -7,7 +7,7 @@
 
 import Foundation
 import Vapor
-import Ed25519
+import CryptoKit25519
 
 /**
  The `Server` class handles all request related to user and device management, as well as adminstrative tasks.

@@ -9,6 +9,8 @@ public func routes(_ router: Router) throws {
     
     #warning("Add push notifications for all messages to devices")
     
+    #warning("Add delivery receipts for all messages to devices")
+    
     // MARK: Info
     
     router.get("ping") { _ in

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Ed25519
+import CryptoKit25519
 
 extension Data {
     
@@ -15,9 +15,9 @@ extension Data {
      - Returns: The public key.
      - Throws: `RendezvousError.invalidRequest`, if the data is not a valid public key.
      */
-    func toPublicKey() throws -> Ed25519.PublicKey {
+    func toPublicKey() throws -> Curve25519.Signing.PublicKey {
         do {
-            return try Ed25519.PublicKey(rawRepresentation: self)
+            return try .init(rawRepresentation: self)
         } catch {
             throw RendezvousError.invalidRequest
         }

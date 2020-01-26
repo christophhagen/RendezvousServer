@@ -7,7 +7,7 @@
 
 import Foundation
 import Vapor
-import Ed25519
+import CryptoKit25519
 
 extension Server {
     

@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftProtobuf
-import Ed25519
+import CryptoKit25519
 
 protocol TimestampedProtobuf: SignedProtobuf, PublicKeyProtobuf {
     
@@ -43,7 +43,7 @@ extension TimestampedProtobuf {
      - Parameter privateKey: The signing key.
      - Throws: `BinaryEncodingError`, if the serialization for the signature fails.
      */
-    mutating func timestamp(andSignWith privateKey: Ed25519.PrivateKey) throws {
+    mutating func timestamp(andSignWith privateKey: Curve25519.Signing.PrivateKey) throws {
         self.timestamp = Date.secondsNow
         self.signature = Data()
         let data = try serializedData()
@@ -57,7 +57,7 @@ extension TimestampedProtobuf {
      - Returns: The serialized data.
      - Throws: `BinaryEncodingError`, if the serialization fails.
      */
-    func data(timestampedAndSignedWith privateKey: Ed25519.PrivateKey) throws -> Data {
+    func data(timestampedAndSignedWith privateKey: Curve25519.Signing.PrivateKey) throws -> Data {
         var object = self
         try object.timestamp(andSignWith: privateKey)
         return try object.serializedData()

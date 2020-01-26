@@ -1,7 +1,7 @@
 import Vapor
 
 /// The path to the server configuration
-let configPath = "/Users/user/Development/Rendezvous/config.json"
+let configPath = "/Users/user/Development/RendezvousServer/config.json"
 
 /// The global server instance
 var server: Server!

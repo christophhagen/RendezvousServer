@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Ed25519
+import CryptoKit25519
 import SwiftProtobuf
 
 protocol PublicKeyProtobuf: SwiftProtobuf.Message {
@@ -16,7 +16,7 @@ protocol PublicKeyProtobuf: SwiftProtobuf.Message {
 
 extension PublicKeyProtobuf {
     
-    mutating func set(publicKey: Ed25519.PublicKey) {
+    mutating func set(publicKey: Curve25519.Signing.PublicKey) {
         self.publicKey = publicKey.rawRepresentation
     }
     
@@ -25,9 +25,9 @@ extension PublicKeyProtobuf {
      - Returns: The valid public key.
      - Throws: `RendezvousError.invalidRequest`, if the key is invalid.
      */
-    func getPublicKey() throws -> Ed25519.PublicKey {
+    func getPublicKey() throws -> Curve25519.Signing.PublicKey {
         do {
-            return try Ed25519.PublicKey(rawRepresentation: publicKey)
+            return try .init(rawRepresentation: publicKey)
         } catch {
             throw RendezvousError.invalidRequest
         }

@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftProtobuf
-import Ed25519
+import CryptoKit25519
 
 protocol SignedProtobuf: SwiftProtobuf.Message {
     
@@ -38,7 +38,7 @@ extension SignedProtobuf {
      - Parameter publicKey: The public key to verify the signature.
      - Throws: `RendezvousError.invalidSignature`, `BinaryEncodingError`
      */
-    func verifySignature(with publicKey: Ed25519.PublicKey) throws {
+    func verifySignature(with publicKey: Curve25519.Signing.PublicKey) throws {
         let signature = self.signature
         let data = try dataWithoutSignature()
         guard publicKey.isValidSignature(signature, for: data) else {
@@ -51,7 +51,7 @@ extension SignedProtobuf {
      - Parameter privateKey: The private key to sign the message.
      - Throws: `BinaryEncodingError`, if the serialization for the signature fails.
      */
-    mutating func sign(with privateKey: Ed25519.PrivateKey) throws {
+    mutating func sign(with privateKey: Curve25519.Signing.PrivateKey) throws {
         self.signature = Data()
         let data = try self.serializedData()
         self.signature = privateKey.signature(for: data)
@@ -62,7 +62,7 @@ extension SignedProtobuf {
      - Parameter privateKey: The private key to sign the message.
      - Throws: `BinaryEncodingError`, if the serialization fails.
      */
-    func data(signedWith privateKey: Ed25519.PrivateKey) throws -> Data {
+    func data(signedWith privateKey: Curve25519.Signing.PrivateKey) throws -> Data {
         var object = self
         object.signature = Data()
         let data = try object.serializedData()

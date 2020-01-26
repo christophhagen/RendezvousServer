@@ -7,7 +7,7 @@
 
 import Foundation
 import Vapor
-import Ed25519
+import CryptoKit25519
 
 extension Request {
     
@@ -150,7 +150,7 @@ extension Request {
     
     private func key(header: HeaderKey) throws -> Data {
         let key = try binary(header: header)
-        guard key.count == Ed25519.PublicKey.keyLength else {
+        guard key.count == Curve25519.keyLength else {
             throw RendezvousError.invalidRequest
         }
         return key

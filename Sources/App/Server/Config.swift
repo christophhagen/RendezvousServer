@@ -7,76 +7,72 @@
 
 import Foundation
 
+/**
+ A configuration for a Rendezvous server.
+ */
 struct Config: Logger {
 
-    /**
-     The id of the private key that was created for the push notifications. Can be found when creating a new key under [developer.apple.com](https://developer.apple.com) -> `Certificates, Identifiers & Profiles` -> `Keys` -> `All`. More information about the setup: [Perfect-Notifications Setup](https://github.com/PerfectlySoft/Perfect-Notifications#obtain-apns-auth-key)
-     */
-    let keyId: String
+    /// The server to use for push notifications
+    let notificationServer: URL
     
-    /**
-     The id of the development team. Can be found under [developer.apple.com](https://developer.apple.com) -> `Account` -> `Membership` -> `Team ID`
-     */
-    let teamId: String
-    
-    /**
-     The path to the key file for push notifications which has been downloaded from [developer.apple.com](https://developer.apple.com).
-     - Note: The path can be relative to the working directory of the project
-     */
-    let privateKeyPath: URL
-    
-    /**
-     The topic to which the push messages should be sent. This value must match the bundle identifier of the app that is targeted.
-     */
-    let apnsTopic: String
-    
-    /**
-     The path to the folder where the message data will be stored.
-     - note: This can be a path relative to the working directory of the project.
-     */
+    /// The path to the folder where the server data will be stored.
     let baseDirectory: URL
     
-    let serverDataPath: URL
-    
+    /// Indicate if this server is used for development, i.e. if server resets are allowed by the admin
     let isDevelopmentServer: Bool
     
+    /// Indicate if the server should also serve static files (can be handled by external programs such as Nginx)
     let shouldServeStaticFiles: Bool
     
+    /// The path to the log file
     let logFile: URL?
     
+    /**
+     Create a configuration from a JSON dictionary.
+     - Parameter config: The JSON dictionary.
+     - Throws: `ConfigError.missingParameter`, if the config is missing options.
+     */
     init(config: [String : Any]) throws {
-        
-        func load(_ key: String, or error: String) throws -> String {
-            guard let value = config[key] as? String else {
-                Config.log(error: error)
-                throw ConfigError.missingParameter
-            }
-            return value
+
+        // Get the server data folder
+        guard let dataFolder = config["dataFolder"] as? String else {
+            Config.log(error: "Missing data folder path")
+            throw ConfigError.missingParameter
         }
-        
-        let privateKeyPath = try load("pathToPrivateKey", or: "Missing private key path")
-        let dataFolder = try load("pathToDataFolder", or: "Missing data folder path")
-        let serverDataPath = try load("pathToServerData", or: "Missing server data path")
-        
-        self.keyId = try load("keyId", or: "Missing key id")
-        self.teamId = try load("teamId", or: "Missing team id")
-        self.apnsTopic = try load("apnsTopic", or: "Missing APNs topic")
-        
-        self.privateKeyPath = URL(fileURLWithPath: privateKeyPath)
         self.baseDirectory = URL(fileURLWithPath: dataFolder)
-        self.serverDataPath = URL(fileURLWithPath: serverDataPath)
         
-        self.isDevelopmentServer = config["isDevelopmentServer"] as? Bool ?? false
-        self.shouldServeStaticFiles = config["shouldServeStaticFiles"] as? Bool ?? false
+        // Get the default notification server
+        guard let notificationServerPath = config["notificationServer"] as? String, let notificationServer = URL(string: notificationServerPath) else {
+            Config.log(error: "Missing notification server")
+            throw ConfigError.missingParameter
+        }
+        self.notificationServer = notificationServer
         
-        if let path = config["logFilePath"] as? String {
+        // Set the log file, if specified
+        if let path = config["logFile"] as? String {
             self.logFile = URL(fileURLWithPath: path)
         } else {
             self.logFile = nil
         }
+        
+        // Set flags
+        self.isDevelopmentServer = config["development"] as? Bool ?? false
+        self.shouldServeStaticFiles = config["staticFiles"] as? Bool ?? false
     }
     
+    /**
+     Create a configuration from file data.
+     
+     - Parameter data: The file data read from disk.
+     - Throws: `ConfigError`
+     
+     - Note: Possible errors:
+        - `ConfigError.invalidJSON(_)`, if the configuration data is not valid JSON data.
+        - `ConfigError.missingParameter`, if the config is missing options.
+     */
     init(data: Data) throws {
+        
+        // Try to create the JSON dictionary
         let dictionary: [String: Any]
         do {
             dictionary = try JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
@@ -84,16 +80,34 @@ struct Config: Logger {
             Config.log(error: "Failed to load JSON data from config file: \(error)")
             throw ConfigError.invalidJSON(error)
         }
+        
+        // Load the values from JSON
         try self.init(config: dictionary)
     }
     
+    /**
+     Create a configuration from a file.
+     
+     - Parameter path: The path to the configuration file.
+     - Throws: `ConfigError`
+     
+     - Note: Possible errors:
+        - `ConfigError.fileNotFound(_)`, if the path contains no file.
+        - ` ConfigError.fileReadFailed(_)`, if the file could not be read.
+        - `ConfigError.invalidJSON(_)`, if the configuration data is not valid JSON data.
+        - `ConfigError.missingParameter`, if the config is missing options.
+    */
     init(at path: String) throws {
         Config.log(debug: "Loading from file: \(path)")
+        
+        // Verify that the file exists
         guard FileManager.default.fileExists(atPath: path) else {
             Config.log(error: "Config file not found at path \(path)")
             throw ConfigError.fileNotFound(path)
         }
-        let data: Data // received from a network request, for example
+        
+        // Read the file data
+        let data: Data
         do {
             let url = URL(fileURLWithPath: path)
             data = try Data(contentsOf: url)
@@ -101,6 +115,8 @@ struct Config: Logger {
             Config.log(error: "Failed to load data from config file: \(error)")
             throw ConfigError.fileReadFailed(path)
         }
+        
+        // Load the JSON
         try self.init(data: data)
     }
 }

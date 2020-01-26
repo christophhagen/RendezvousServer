@@ -1,0 +1,7 @@
+{
+    "dataFolder": "<Path where all the server data is kept>",
+    "logFile": "logs/rendezvous.log",
+    "notificationServer": "localhost:8000",
+    "development": false,
+    "staticFiles" : false
+}

@@ -54,6 +54,9 @@ final class Server: Logger {
     /// The authentication tokens for all internal devices.
     private var authTokens: [Data : Data]
     
+    /// The tokens to authenticate the messages to the notification servers
+    private var notificationTokens: [Data : Data]
+    
     /// The data to send to each internal device.
     private var deviceData: [Data : RV_DeviceDownload]
     
@@ -65,6 +68,9 @@ final class Server: Logger {
     
     /// The users which are allowed to register on the server, with their pins, the remaining tries, and the time until which they can register.
     private var usersAllowedToRegister: [String : RV_AllowedUser]
+    
+    /// The notification server to use for push notifications if the user doesn't specify an alternative.
+    let defaultNotificationServer: URL
     
     /// Indicate if this server is used for development
     let isDevelopmentServer: Bool
@@ -91,7 +97,8 @@ final class Server: Logger {
             self.init(
                 storage: storage,
                 development: config.isDevelopmentServer,
-                serveStaticFiles: config.shouldServeStaticFiles)
+                serveStaticFiles: config.shouldServeStaticFiles,
+                notificationServer: config.notificationServer)
         }
 
         if isDevelopmentServer {
@@ -103,15 +110,17 @@ final class Server: Logger {
      Create an empty management instance.
      - Note: The admin authentication token will be set to all zeros.
      */
-    private init(storage: Storage, development: Bool, serveStaticFiles: Bool) {
+    private init(storage: Storage, development: Bool, serveStaticFiles: Bool, notificationServer: URL) {
         self.adminToken = Data(repeating: 0, count: Server.authTokenLength)
         self.usersAllowedToRegister = [:]
         self.internalUsers = [:]
         self.authTokens = [:]
+        self.notificationTokens = [:]
         self.deviceData = [:]
         self.oldDeviceData = [:]
         self.topics = [:]
         
+        self.defaultNotificationServer = notificationServer
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
@@ -141,16 +150,19 @@ final class Server: Logger {
         self.usersAllowedToRegister = object.allowedUsers
         self.internalUsers = [:]
         self.authTokens = [:]
+        self.notificationTokens = [:]
         self.deviceData = [:]
         self.oldDeviceData = [:]
         self.topics = [:]
+        
+        self.defaultNotificationServer = URL(string: object.notificationServer)!
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
         
         object.internalUsers.forEach { internalUsers[$0.publicKey] = $0 }
         object.authTokens.forEach { authTokens[$0.deviceKey] = $0.authToken }
-        #warning("TODO: Load/add device data and topics")
+        #warning("TODO: Load/add device data, notification tokens and topics")
     }
     
     /// Serialize the management data for storage on disk.
@@ -267,6 +279,13 @@ final class Server: Logger {
         return false
     }
     
+    /// Check that the notification server has a valid url
+    func isValid(notificationServer: String) throws {
+        if notificationServer != "", URL(string: notificationServer) == nil {
+            throw RendezvousError.invalidRequest
+        }
+    }
+    
     func allow(user: RV_AllowedUser) {
         usersAllowedToRegister[user.name] = user
     }
@@ -283,7 +302,7 @@ final class Server: Logger {
         internalUsers[publicKey]
     }
     
-    func userDevices(_ user: Data) -> [RV_UserDevice]? {
+    func userDevices(_ user: Data) -> [RV_InternalUser.Device]? {
         internalUsers[user]?.devices
     }
     
@@ -305,12 +324,14 @@ final class Server: Logger {
         return topics[id]
     }
     
-    func add(topicMessage: RV_DeviceDownload.Message, for device: Data) {
+    func add(topicMessage: RV_DeviceDownload.Message, for device: Data, of user: Data) {
         deviceData[device]!.messages.append(topicMessage)
+        push(topicMessage: topicMessage, to: device, of: user)
     }
 
-    func add(topicUpdate: RV_Topic, for device: Data) {
+    func add(topicUpdate: RV_Topic, for device: Data, of user: Data) {
         deviceData[device]!.topicUpdates.append(topicUpdate)
+        push(topicUpdate: topicUpdate, to: device, of: user)
     }
     
     func add(topicKeyMessages messages: [RV_TopicKeyMessage], for device: Data) {
@@ -339,6 +360,25 @@ final class Server: Logger {
     
     func deviceExists(_ device: Data) -> Bool {
         authTokens[device] != nil
+    }
+    
+    // MARK: Push
+    
+    func notificationServer(for user: Data) -> URL {
+        let server = internalUsers[user]!.notificationServer
+        guard server != "" else {
+            return defaultNotificationServer
+        }
+        // Urls are validated when user data is changed
+        return URL(string: server)!
+    }
+    
+    func add(notificationToken: Data, for device: Data) {
+        notificationTokens[device] = notificationToken
+    }
+    
+    func notificationToken(for device: Data) -> Data? {
+        notificationTokens[device]
     }
     
     func getAndClearDeviceData(_ device: Data) -> RV_DeviceDownload {

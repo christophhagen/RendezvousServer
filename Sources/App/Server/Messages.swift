@@ -40,23 +40,23 @@ extension Server {
      */
     func addMessage(_ request: Request) throws -> Data {
         let data = try request.body()
-        let request = try RV_TopicMessageUpload(validRequest: data)
+        let upload = try RV_TopicMessageUpload(validRequest: data)
         
         // Check the length of relevant fields
-        guard request.message.metadata.count < Server.maximumMetadataLength,
-            request.message.id.count == Server.messageIdLength else {
+        guard upload.message.metadata.count < Server.maximumMetadataLength,
+            upload.message.id.count == Server.messageIdLength else {
                 throw RendezvousError.invalidRequest
         }
         
-        try authenticate(device: request.deviceKey, token: request.authToken)
+        try authenticate(device: upload.deviceKey, token: upload.authToken)
         
         // Get the existing topic
-        guard let topic = self.topic(id: request.topicID) else {
+        guard let topic = self.topic(id: upload.topicID) else {
             throw RendezvousError.resourceNotAvailable
         }
         
         // Get the member who uploaded the message
-        let index = Int(request.message.indexInMemberList)
+        let index = Int(upload.message.indexInMemberList)
         guard index < topic.info.members.count else {
             throw RendezvousError.invalidRequest
         }
@@ -69,29 +69,29 @@ extension Server {
         guard let signatureKey = try? member.signatureKey.toPublicKey() else {
             throw RendezvousError.invalidRequest
         }
-        try request.message.verifySignature(with: signatureKey)
+        try upload.message.verifySignature(with: signatureKey)
         
         // Calculate the hash of the file and compare it to the message value
-        guard try SHA256.hash(request.file) == request.message.hash else {
+        guard try SHA256.hash(upload.file) == upload.message.hash else {
             throw RendezvousError.invalidRequest
         }
         
         // Store the file and the message
-        try storage.store(file: request.file, with: request.message.id, in: request.topicID)
+        try storage.store(file: upload.file, with: upload.message.id, in: upload.topicID)
         
         // Store the message
-        let output = try storage.store(message: request.message, in: request.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)
+        let output = try storage.store(message: upload.message, in: upload.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)
         
         // Store the new chain state
         let message = RV_DeviceDownload.Message.with {
-            $0.topicID = request.topicID
-            $0.content = request.message
+            $0.topicID = upload.topicID
+            $0.content = upload.message
             $0.chain = .with { chain in
                 chain.nextChainIndex = topic.chain.nextChainIndex + 1
                 chain.output = output
             }
         }
-        update(chain: message.chain, for: request.topicID)
+        update(chain: message.chain, for: upload.topicID)
         
         // Add the message to each device in the topic
         for member in topic.info.members {
@@ -99,10 +99,10 @@ extension Server {
                 continue
             }
             for device in devices {
-                guard device.deviceKey != request.deviceKey else {
+                guard device.deviceKey != upload.deviceKey else {
                     continue
                 }
-                add(topicMessage: message, for: device.deviceKey)
+                add(topicMessage: message, for: device.deviceKey, of: member.info.userKey)
             }
         }
         

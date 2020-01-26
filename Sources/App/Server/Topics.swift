@@ -91,7 +91,7 @@ extension Server {
         members.forEach { member in
             for device in userDevices(member)! {
                 guard device.deviceKey != deviceKey else { continue }
-                add(topicUpdate: topic, for: device.deviceKey)
+                add(topicUpdate: topic, for: device.deviceKey, of: member)
             }
         }
     }

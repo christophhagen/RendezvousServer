@@ -7,8 +7,6 @@ import SwiftProtobuf
 /// [Learn More →](https://docs.vapor.codes/3.0/getting-started/structure/#routesswift)
 public func routes(_ router: Router) throws {
     
-    #warning("Add push notifications for all messages to devices")
-    
     #warning("Add delivery receipts for all messages to devices")
     
     // MARK: Info
@@ -47,6 +45,9 @@ public func routes(_ router: Router) throws {
     
     // Register a new device
     router.postCatching("device", "register", call: server.registerDevice)
+    
+    // Register a device token for push notifications
+    router.postCatching("device", "push", call: server.addPushTokenForDevice)
     
     // Delete a device
     router.postCatching("device", "delete", call: server.deleteDevice)

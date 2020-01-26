@@ -35,6 +35,9 @@ extension Server {
         let data = try request.body()
         let bundle = try RV_RegistrationBundle(validRequest: data)
         
+        // Check that the notification server has a valid url
+        try isValid(notificationServer: bundle.info.notificationServer)
+        
         // Extract the user pin and check that it can register
         guard canRegister(user: bundle.info.name, pin: bundle.pin) else {
             throw RendezvousError.authenticationFailed

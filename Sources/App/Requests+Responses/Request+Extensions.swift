@@ -55,11 +55,13 @@ extension Request {
      Get the authentication token from the request.
 
      This can be the administrator token, the user token, or the device token.
+     
      - Returns: The  binary token.
      - Throws: `RendezvousError` errors
      - Note: An authentication token is always `Management.authTokenLength` bytes of binary data, and is sent base64 encoded in requests.
+     
      - Note: Possible Errors:
-     - `invalidRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
+        - `invalidRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
      */
     func authToken() throws -> Data {
         let token = try binary(header: .authToken)
@@ -127,23 +129,27 @@ extension Request {
     }
     
     /**
-    Get the public key of the user from the request.
-    - Returns: The public key in binary format.
-    - Throws: `RendezvousError` errors
-    - Note: Possible Errors:
-    - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
+     Get the public key of the user from the request.
+     
+     - Returns: The public key in binary format.
+     - Throws: `RendezvousError` errors
+     
+     - Note: Possible Errors:
+        - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
     */
     func userPublicKey() throws -> Data {
         return try key(header: .user)
     }
     
     /**
-    Get the public key of the requested user from the request.
-    - Returns: The public key in binary format.
-    - Throws: `RendezvousError` errors
-    - Note: Possible Errors:
-    - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
-    */
+     Get the public key of the requested user from the request.
+     
+     - Returns: The public key in binary format.
+     - Throws: `RendezvousError` errors
+     
+     - Note: Possible Errors:
+        - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
+     */
     func receiverPublicKey() throws -> Data {
         return try key(header: .receiver)
     }

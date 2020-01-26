@@ -38,6 +38,8 @@ extension Server {
             throw RendezvousError.authenticationFailed
         }
         
+        
+        
         // Check that at least one device is present
         guard userInfo.devices.count == oldInfo.devices.count + 1 else {
             throw RendezvousError.invalidRequest
@@ -56,6 +58,7 @@ extension Server {
         let newDevice = oldDevices.popLast()!
         guard userInfo.creationTime == oldInfo.creationTime,
             userInfo.name == oldInfo.name,
+            userInfo.notificationServer == oldInfo.notificationServer,
             oldDevices == oldInfo.devices else {
                 throw RendezvousError.invalidRequest
         }
@@ -79,6 +82,36 @@ extension Server {
         
         // Return the authentication token
         return authToken
+    }
+    
+    /**
+     Add a notification token for a device.
+     
+     The token will be used to authenticate the server when sending push notifications to the notification server of the user.
+     
+     - Parameter request: The received POST request.
+     - Throws: `RendezvousError`
+     
+     - Note: The request must contain the user key, device key and authentication token in the HTTP headers, and an authentication token in the HTTP body.
+     
+     - Note: Possible Errors:
+        - `invalidRequest`, if the user key, device key, or authentication token are missing, or if the provided notification token has invalid length.
+        - `authenticationFailed`, if the user or device doesn't exist, or the token is invalid
+     */
+    func addPushTokenForDevice(_ request: Request) throws {
+        let userKey = try request.userPublicKey()
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
+        let notificationToken = try request.body()
+        
+        guard notificationToken.count == Server.authTokenLength else {
+            throw RendezvousError.invalidRequest
+        }
+        
+        // Check if authentication is valid
+        _ = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
+        
+        add(notificationToken: notificationToken, for: deviceKey)
     }
     
     /**
@@ -126,6 +159,7 @@ extension Server {
         let oldDevice = newDevices.remove(at: index)
         guard userInfo.creationTime == oldInfo.creationTime,
             userInfo.name == oldInfo.name,
+            userInfo.notificationServer == oldInfo.notificationServer,
             newDevices == userInfo.devices else {
                 throw RendezvousError.invalidRequest
         }

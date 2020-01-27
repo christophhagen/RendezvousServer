@@ -900,6 +900,12 @@ struct RV_ClientData {
     set {_uniqueStorage()._serverURL = newValue}
   }
 
+  /// The application identifier
+  var appication: Data {
+    get {return _storage._appication}
+    set {_uniqueStorage()._appication = newValue}
+  }
+
   /// The private identity key of the user
   var userPrivateKey: Data {
     get {return _storage._userPrivateKey}
@@ -2736,18 +2742,20 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
   static let protoMessageName: String = _protobuf_package + ".ClientData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "serverURL"),
-    2: .same(proto: "userPrivateKey"),
-    3: .same(proto: "devicePrivateKey"),
-    4: .same(proto: "devicePublicKey"),
-    5: .same(proto: "userInfo"),
-    6: .same(proto: "authToken"),
-    7: .same(proto: "prekeys"),
-    8: .same(proto: "topicKeys"),
-    9: .same(proto: "topics"),
+    2: .same(proto: "appication"),
+    3: .same(proto: "userPrivateKey"),
+    4: .same(proto: "devicePrivateKey"),
+    5: .same(proto: "devicePublicKey"),
+    6: .same(proto: "userInfo"),
+    7: .same(proto: "authToken"),
+    8: .same(proto: "prekeys"),
+    9: .same(proto: "topicKeys"),
+    10: .same(proto: "topics"),
   ]
 
   fileprivate class _StorageClass {
     var _serverURL: String = String()
+    var _appication: Data = SwiftProtobuf.Internal.emptyData
     var _userPrivateKey: Data = SwiftProtobuf.Internal.emptyData
     var _devicePrivateKey: Data = SwiftProtobuf.Internal.emptyData
     var _devicePublicKey: Data = SwiftProtobuf.Internal.emptyData
@@ -2763,6 +2771,7 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
 
     init(copying source: _StorageClass) {
       _serverURL = source._serverURL
+      _appication = source._appication
       _userPrivateKey = source._userPrivateKey
       _devicePrivateKey = source._devicePrivateKey
       _devicePublicKey = source._devicePublicKey
@@ -2787,14 +2796,15 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
       while let fieldNumber = try decoder.nextFieldNumber() {
         switch fieldNumber {
         case 1: try decoder.decodeSingularStringField(value: &_storage._serverURL)
-        case 2: try decoder.decodeSingularBytesField(value: &_storage._userPrivateKey)
-        case 3: try decoder.decodeSingularBytesField(value: &_storage._devicePrivateKey)
-        case 4: try decoder.decodeSingularBytesField(value: &_storage._devicePublicKey)
-        case 5: try decoder.decodeSingularMessageField(value: &_storage._userInfo)
-        case 6: try decoder.decodeSingularBytesField(value: &_storage._authToken)
-        case 7: try decoder.decodeRepeatedMessageField(value: &_storage._prekeys)
-        case 8: try decoder.decodeRepeatedMessageField(value: &_storage._topicKeys)
-        case 9: try decoder.decodeRepeatedMessageField(value: &_storage._topics)
+        case 2: try decoder.decodeSingularBytesField(value: &_storage._appication)
+        case 3: try decoder.decodeSingularBytesField(value: &_storage._userPrivateKey)
+        case 4: try decoder.decodeSingularBytesField(value: &_storage._devicePrivateKey)
+        case 5: try decoder.decodeSingularBytesField(value: &_storage._devicePublicKey)
+        case 6: try decoder.decodeSingularMessageField(value: &_storage._userInfo)
+        case 7: try decoder.decodeSingularBytesField(value: &_storage._authToken)
+        case 8: try decoder.decodeRepeatedMessageField(value: &_storage._prekeys)
+        case 9: try decoder.decodeRepeatedMessageField(value: &_storage._topicKeys)
+        case 10: try decoder.decodeRepeatedMessageField(value: &_storage._topics)
         default: break
         }
       }
@@ -2806,29 +2816,32 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
       if !_storage._serverURL.isEmpty {
         try visitor.visitSingularStringField(value: _storage._serverURL, fieldNumber: 1)
       }
+      if !_storage._appication.isEmpty {
+        try visitor.visitSingularBytesField(value: _storage._appication, fieldNumber: 2)
+      }
       if !_storage._userPrivateKey.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._userPrivateKey, fieldNumber: 2)
+        try visitor.visitSingularBytesField(value: _storage._userPrivateKey, fieldNumber: 3)
       }
       if !_storage._devicePrivateKey.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._devicePrivateKey, fieldNumber: 3)
+        try visitor.visitSingularBytesField(value: _storage._devicePrivateKey, fieldNumber: 4)
       }
       if !_storage._devicePublicKey.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._devicePublicKey, fieldNumber: 4)
+        try visitor.visitSingularBytesField(value: _storage._devicePublicKey, fieldNumber: 5)
       }
       if let v = _storage._userInfo {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 5)
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
       }
       if !_storage._authToken.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._authToken, fieldNumber: 6)
+        try visitor.visitSingularBytesField(value: _storage._authToken, fieldNumber: 7)
       }
       if !_storage._prekeys.isEmpty {
-        try visitor.visitRepeatedMessageField(value: _storage._prekeys, fieldNumber: 7)
+        try visitor.visitRepeatedMessageField(value: _storage._prekeys, fieldNumber: 8)
       }
       if !_storage._topicKeys.isEmpty {
-        try visitor.visitRepeatedMessageField(value: _storage._topicKeys, fieldNumber: 8)
+        try visitor.visitRepeatedMessageField(value: _storage._topicKeys, fieldNumber: 9)
       }
       if !_storage._topics.isEmpty {
-        try visitor.visitRepeatedMessageField(value: _storage._topics, fieldNumber: 9)
+        try visitor.visitRepeatedMessageField(value: _storage._topics, fieldNumber: 10)
       }
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -2840,6 +2853,7 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
         let _storage = _args.0
         let rhs_storage = _args.1
         if _storage._serverURL != rhs_storage._serverURL {return false}
+        if _storage._appication != rhs_storage._appication {return false}
         if _storage._userPrivateKey != rhs_storage._userPrivateKey {return false}
         if _storage._devicePrivateKey != rhs_storage._devicePrivateKey {return false}
         if _storage._devicePublicKey != rhs_storage._devicePublicKey {return false}

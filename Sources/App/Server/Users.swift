@@ -48,7 +48,13 @@ extension Server {
         guard bundle.info.devices.count == 1 else {
             throw RendezvousError.invalidRequest
         }
+        
+        // Check that app id is valid.
         let device = bundle.info.devices[0]
+        guard device.application.count == Server.appIdLength else {
+            throw RendezvousError.invalidRequest
+        }
+        
         let deviceKeyData = device.deviceKey
         let deviceKey = try deviceKeyData.toPublicKey()
         

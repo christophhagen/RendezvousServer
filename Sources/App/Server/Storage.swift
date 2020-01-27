@@ -17,7 +17,7 @@ import Crypto
         userIdentityKey/
             prekeys/
                 deviceIdentityKey // The prekeys of a device
-            topickeys // The available topic keys of a user
+            topickeys/ // The available topic keys of a user
                 appId // The topic keys for an app.
     topicdata/
         topicID/
@@ -139,14 +139,21 @@ final class Storage: Logger {
     }
     
     /**
+    The url to the topic key folder of the user.
+    - Parameter user: The public key of the user.
+    - Returns: The url of the file containing the topic keys.
+    */
+    private func userTopicKeyFolderURL(_ user: Data) -> URL {
+        userURL(user).appendingPathComponent("topickeys")
+    }
+    
+    /**
      The url containing available topic keys of the user.
      - Parameter user: The public key of the user.
      - Returns: The url of the file containing the topic keys.
      */
     private func userTopicKeyURL(_ user: Data, app: Data) -> URL {
-        userURL(user)
-            .appendingPathComponent("topickeys")
-            .appendingPathComponent(app.fileId)
+        userTopicKeyFolderURL(user).appendingPathComponent(app.fileId)
     }
     
     /**
@@ -219,8 +226,10 @@ final class Storage: Logger {
         try removeItem(at: url)
         // Create the user folder
         try createFolder(at: url)
-        // Create the prekey and messages folders
+        // Create the prekey folder
         try createFolder(at: userPreKeyURL(user))
+        // Create the topic key folder
+        try createFolder(at: userTopicKeyFolderURL(user))
     }
     
     /**

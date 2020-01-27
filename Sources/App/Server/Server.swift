@@ -38,7 +38,7 @@ final class Server: Logger {
     static let messageIdLength = 12
     
     /// The length of an app id
-    static let appIdLength = 8
+    static let appIdLength = 10
     
     /// The maximum length of message metadata
     static let maximumMetadataLength = 100

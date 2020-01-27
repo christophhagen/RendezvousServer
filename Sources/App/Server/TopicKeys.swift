@@ -29,8 +29,10 @@ extension Server {
                 throw RendezvousError.invalidKeyUpload
             }
         }
+        
         // Check that each receiver device is present in the list of messages
-        let receivers = Set(user.devices.map { $0.deviceKey }).subtracting([bundle.deviceKey])
+        let receivers = Set(user.devices(for: bundle.application))
+            .subtracting([bundle.deviceKey])
         guard Set(bundle.messages.map { $0.deviceKey }) == receivers else {
             throw RendezvousError.invalidKeyUpload
         }
@@ -44,7 +46,7 @@ extension Server {
         }
 
         // Store the topic keys
-        let count = try storage.store(topicKeys: bundle.topicKeys, for: user.publicKey)
+        let count = try storage.store(topicKeys: bundle.topicKeys, for: bundle.application, of: user.publicKey)
         
         // Store the topic messages and update the topic key count
         for list in bundle.messages {
@@ -77,19 +79,21 @@ extension Server {
         - The public key of the device.
         - The authentication token of the device.
         - The public key of the user for which a key is requested.
+        - The app id
      */
     func getTopicKey(_ request: Request) throws -> Data {
         let userKey = try request.userPublicKey()
         let deviceKey = try request.devicePublicKey()
         let authToken = try request.authToken()
         let receiver = try request.receiverPublicKey()
+        let appId = try request.appId()
         
         // Check if authentication is valid
         let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
         #warning("Add rate limit for topic key requests.")
         
         // Get a topic key
-        let topicKey = try storage.getTopicKey(of: receiver)
+        let topicKey = try storage.getTopicKey(for: appId, of: receiver)
         
         // Decrease the available count
         for device in user.devices {
@@ -127,7 +131,7 @@ extension Server {
             }
             
             // Get a topic key
-            guard let topicKey = try? storage.getTopicKey(of: userKey) else {
+            guard let topicKey = try? storage.getTopicKey(for: request.application, of: userKey) else {
                 return nil
             }
             

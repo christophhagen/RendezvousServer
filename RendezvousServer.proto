@@ -35,26 +35,29 @@ message InternalUser {
     // The devices of the user, must be sorted in ascending order by their creationTime.
     repeated Device devices = 4;
 
-    // The time when the data was signed
+    // The time when the data was signed.
     uint32 timestamp = 5;
     
-    // The server which handles the notifications
+    // The server which handles the notifications.
     string notificationServer = 6;
 
     // The signature of the user info, signed by the user identity key.
     bytes signature = 7;
     
-    // A device of an internal user
+    // A device of an internal user.
     message Device {
 
-        // The public key of the device
+        // The public key of the device.
         bytes deviceKey = 1;
 
-        // The time when the device was created (in seconds since 1.1.1970)
+        // The time when the device was created (in seconds since 1.1.1970).
         uint32 creationTime = 2;
 
-        // Indicates if the device is active
+        // Indicates if the device is active.
         bool isActive = 3;
+
+        // The app associated with the device.
+        bytes application = 4;
     }
 
 }
@@ -222,28 +225,34 @@ message TopicKeyBundle {
 
     // The authentication token of the device
     bytes authToken = 3;
+    
+    // The app associated with the topic keys.
+    bytes application = 4;
 
     // The topic keys
-    repeated TopicKey topicKeys = 4;
+    repeated TopicKey topicKeys = 5;
 
     // The list of messages to deliver to each device
-    repeated TopicKeyMessageList messages = 5;
+    repeated TopicKeyMessageList messages = 6;
 }
 
 // A request to get topic keys for multiple users
 message TopicKeyRequest {
 
     // The public key of the user
-   bytes publicKey = 1;
-
-   // The public key of the device
-   bytes deviceKey = 2;
-
-   // The authentication token of the device
-   bytes authToken = 3;
-
-   // The new prekeys
-   repeated bytes users = 4;
+    bytes publicKey = 1;
+    
+    // The public key of the device
+    bytes deviceKey = 2;
+    
+    // The authentication token of the device
+    bytes authToken = 3;
+    
+    // The app associated with the topic keys.
+    bytes application = 4;
+    
+    // The new prekeys
+    repeated bytes users = 5;
 }
 
 // The response to a topic key request
@@ -295,21 +304,24 @@ message Topic {
 
     // The unique id of the topic
     bytes topicId = 1;
+    
+    // The application in which the topic is created
+    bytes application = 2;
 
     // The time when the topic message was created (in seconds since 1.1.1970)
-    uint32 creationTime = 2;
+    uint32 creationTime = 3;
 
     // The index of the admin in the member list who signed this topic message.
-    uint32 indexOfMessageCreator = 3;
+    uint32 indexOfMessageCreator = 4;
 
     // The keys and roles of all group members
-    repeated MemberInfo members = 4;
+    repeated MemberInfo members = 5;
 
     // The time when the request was signed (in seconds since 1.1.1970)
-    uint32 timestamp = 5;
+    uint32 timestamp = 6;
 
     // The signature of the request data, signed with the admin's topic signature key.
-    bytes signature = 6;
+    bytes signature = 7;
 
     // A message to distribute a topic key to a user
     message MemberInfo {

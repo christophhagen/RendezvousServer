@@ -32,8 +32,9 @@ extension Server {
         - The public key of the user.
         - The public key of the device.
         - The authentication token of the device.
-     - Note: The HTTP body must contain the topic update serialized in an `RV_Topic`
+        - The app id for which the topic is posted.
      
+     - Note: The HTTP body must contain the topic update serialized in an `RV_Topic`
      */
     func createTopic(_ request: Request) throws {
         let data = try request.body()
@@ -89,7 +90,7 @@ extension Server {
         
         // Add the topic message to each device download bundle (except the sending device)
         members.forEach { member in
-            for device in userDevices(member)! {
+            for device in userDevices(member, app: topic.application)! {
                 guard device.deviceKey != deviceKey else { continue }
                 add(topicUpdate: topic, for: device.deviceKey, of: member)
             }

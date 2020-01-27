@@ -60,10 +60,10 @@ struct RV_InternalUser {
   /// The devices of the user, must be sorted in ascending order by their creationTime.
   var devices: [RV_InternalUser.Device] = []
 
-  /// The time when the data was signed
+  /// The time when the data was signed.
   var timestamp: UInt32 = 0
 
-  /// The server which handles the notifications
+  /// The server which handles the notifications.
   var notificationServer: String = String()
 
   /// The signature of the user info, signed by the user identity key.
@@ -71,20 +71,23 @@ struct RV_InternalUser {
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  /// A device of an internal user
+  /// A device of an internal user.
   struct Device {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
-    /// The public key of the device
+    /// The public key of the device.
     var deviceKey: Data = SwiftProtobuf.Internal.emptyData
 
-    /// The time when the device was created (in seconds since 1.1.1970)
+    /// The time when the device was created (in seconds since 1.1.1970).
     var creationTime: UInt32 = 0
 
-    /// Indicates if the device is active
+    /// Indicates if the device is active.
     var isActive: Bool = false
+
+    /// The app associated with the device.
+    var application: Data = SwiftProtobuf.Internal.emptyData
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -433,6 +436,9 @@ struct RV_TopicKeyBundle {
   /// The authentication token of the device
   var authToken: Data = SwiftProtobuf.Internal.emptyData
 
+  /// The app associated with the topic keys.
+  var application: Data = SwiftProtobuf.Internal.emptyData
+
   /// The topic keys
   var topicKeys: [RV_TopicKey] = []
 
@@ -458,6 +464,9 @@ struct RV_TopicKeyRequest {
 
   /// The authentication token of the device
   var authToken: Data = SwiftProtobuf.Internal.emptyData
+
+  /// The app associated with the topic keys.
+  var application: Data = SwiftProtobuf.Internal.emptyData
 
   /// The new prekeys
   var users: [Data] = []
@@ -570,6 +579,9 @@ struct RV_Topic {
 
   /// The unique id of the topic
   var topicID: Data = SwiftProtobuf.Internal.emptyData
+
+  /// The application in which the topic is created
+  var application: Data = SwiftProtobuf.Internal.emptyData
 
   /// The time when the topic message was created (in seconds since 1.1.1970)
   var creationTime: UInt32 = 0
@@ -1243,6 +1255,7 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
     1: .same(proto: "deviceKey"),
     2: .same(proto: "creationTime"),
     3: .same(proto: "isActive"),
+    4: .same(proto: "application"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1251,6 +1264,7 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
       case 1: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 2: try decoder.decodeSingularUInt32Field(value: &self.creationTime)
       case 3: try decoder.decodeSingularBoolField(value: &self.isActive)
+      case 4: try decoder.decodeSingularBytesField(value: &self.application)
       default: break
       }
     }
@@ -1266,6 +1280,9 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
     if self.isActive != false {
       try visitor.visitSingularBoolField(value: self.isActive, fieldNumber: 3)
     }
+    if !self.application.isEmpty {
+      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1273,6 +1290,7 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
     if lhs.deviceKey != rhs.deviceKey {return false}
     if lhs.creationTime != rhs.creationTime {return false}
     if lhs.isActive != rhs.isActive {return false}
+    if lhs.application != rhs.application {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -1820,8 +1838,9 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     1: .same(proto: "publicKey"),
     2: .same(proto: "deviceKey"),
     3: .same(proto: "authToken"),
-    4: .same(proto: "topicKeys"),
-    5: .same(proto: "messages"),
+    4: .same(proto: "application"),
+    5: .same(proto: "topicKeys"),
+    6: .same(proto: "messages"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1830,8 +1849,9 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
       case 1: try decoder.decodeSingularBytesField(value: &self.publicKey)
       case 2: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 3: try decoder.decodeSingularBytesField(value: &self.authToken)
-      case 4: try decoder.decodeRepeatedMessageField(value: &self.topicKeys)
-      case 5: try decoder.decodeRepeatedMessageField(value: &self.messages)
+      case 4: try decoder.decodeSingularBytesField(value: &self.application)
+      case 5: try decoder.decodeRepeatedMessageField(value: &self.topicKeys)
+      case 6: try decoder.decodeRepeatedMessageField(value: &self.messages)
       default: break
       }
     }
@@ -1847,11 +1867,14 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     if !self.authToken.isEmpty {
       try visitor.visitSingularBytesField(value: self.authToken, fieldNumber: 3)
     }
+    if !self.application.isEmpty {
+      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+    }
     if !self.topicKeys.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.topicKeys, fieldNumber: 4)
+      try visitor.visitRepeatedMessageField(value: self.topicKeys, fieldNumber: 5)
     }
     if !self.messages.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.messages, fieldNumber: 5)
+      try visitor.visitRepeatedMessageField(value: self.messages, fieldNumber: 6)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1860,6 +1883,7 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     if lhs.publicKey != rhs.publicKey {return false}
     if lhs.deviceKey != rhs.deviceKey {return false}
     if lhs.authToken != rhs.authToken {return false}
+    if lhs.application != rhs.application {return false}
     if lhs.topicKeys != rhs.topicKeys {return false}
     if lhs.messages != rhs.messages {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -1873,7 +1897,8 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     1: .same(proto: "publicKey"),
     2: .same(proto: "deviceKey"),
     3: .same(proto: "authToken"),
-    4: .same(proto: "users"),
+    4: .same(proto: "application"),
+    5: .same(proto: "users"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1882,7 +1907,8 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
       case 1: try decoder.decodeSingularBytesField(value: &self.publicKey)
       case 2: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 3: try decoder.decodeSingularBytesField(value: &self.authToken)
-      case 4: try decoder.decodeRepeatedBytesField(value: &self.users)
+      case 4: try decoder.decodeSingularBytesField(value: &self.application)
+      case 5: try decoder.decodeRepeatedBytesField(value: &self.users)
       default: break
       }
     }
@@ -1898,8 +1924,11 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     if !self.authToken.isEmpty {
       try visitor.visitSingularBytesField(value: self.authToken, fieldNumber: 3)
     }
+    if !self.application.isEmpty {
+      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+    }
     if !self.users.isEmpty {
-      try visitor.visitRepeatedBytesField(value: self.users, fieldNumber: 4)
+      try visitor.visitRepeatedBytesField(value: self.users, fieldNumber: 5)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1908,6 +1937,7 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     if lhs.publicKey != rhs.publicKey {return false}
     if lhs.deviceKey != rhs.deviceKey {return false}
     if lhs.authToken != rhs.authToken {return false}
+    if lhs.application != rhs.application {return false}
     if lhs.users != rhs.users {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -2128,22 +2158,24 @@ extension RV_Topic: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationB
   static let protoMessageName: String = _protobuf_package + ".Topic"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "topicId"),
-    2: .same(proto: "creationTime"),
-    3: .same(proto: "indexOfMessageCreator"),
-    4: .same(proto: "members"),
-    5: .same(proto: "timestamp"),
-    6: .same(proto: "signature"),
+    2: .same(proto: "application"),
+    3: .same(proto: "creationTime"),
+    4: .same(proto: "indexOfMessageCreator"),
+    5: .same(proto: "members"),
+    6: .same(proto: "timestamp"),
+    7: .same(proto: "signature"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularBytesField(value: &self.topicID)
-      case 2: try decoder.decodeSingularUInt32Field(value: &self.creationTime)
-      case 3: try decoder.decodeSingularUInt32Field(value: &self.indexOfMessageCreator)
-      case 4: try decoder.decodeRepeatedMessageField(value: &self.members)
-      case 5: try decoder.decodeSingularUInt32Field(value: &self.timestamp)
-      case 6: try decoder.decodeSingularBytesField(value: &self.signature)
+      case 2: try decoder.decodeSingularBytesField(value: &self.application)
+      case 3: try decoder.decodeSingularUInt32Field(value: &self.creationTime)
+      case 4: try decoder.decodeSingularUInt32Field(value: &self.indexOfMessageCreator)
+      case 5: try decoder.decodeRepeatedMessageField(value: &self.members)
+      case 6: try decoder.decodeSingularUInt32Field(value: &self.timestamp)
+      case 7: try decoder.decodeSingularBytesField(value: &self.signature)
       default: break
       }
     }
@@ -2153,26 +2185,30 @@ extension RV_Topic: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationB
     if !self.topicID.isEmpty {
       try visitor.visitSingularBytesField(value: self.topicID, fieldNumber: 1)
     }
+    if !self.application.isEmpty {
+      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 2)
+    }
     if self.creationTime != 0 {
-      try visitor.visitSingularUInt32Field(value: self.creationTime, fieldNumber: 2)
+      try visitor.visitSingularUInt32Field(value: self.creationTime, fieldNumber: 3)
     }
     if self.indexOfMessageCreator != 0 {
-      try visitor.visitSingularUInt32Field(value: self.indexOfMessageCreator, fieldNumber: 3)
+      try visitor.visitSingularUInt32Field(value: self.indexOfMessageCreator, fieldNumber: 4)
     }
     if !self.members.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.members, fieldNumber: 4)
+      try visitor.visitRepeatedMessageField(value: self.members, fieldNumber: 5)
     }
     if self.timestamp != 0 {
-      try visitor.visitSingularUInt32Field(value: self.timestamp, fieldNumber: 5)
+      try visitor.visitSingularUInt32Field(value: self.timestamp, fieldNumber: 6)
     }
     if !self.signature.isEmpty {
-      try visitor.visitSingularBytesField(value: self.signature, fieldNumber: 6)
+      try visitor.visitSingularBytesField(value: self.signature, fieldNumber: 7)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: RV_Topic, rhs: RV_Topic) -> Bool {
     if lhs.topicID != rhs.topicID {return false}
+    if lhs.application != rhs.application {return false}
     if lhs.creationTime != rhs.creationTime {return false}
     if lhs.indexOfMessageCreator != rhs.indexOfMessageCreator {return false}
     if lhs.members != rhs.members {return false}

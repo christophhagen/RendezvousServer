@@ -154,6 +154,22 @@ extension Request {
         return try key(header: .receiver)
     }
     
+    /**
+     Get the app id from the request.
+     - Note:App ids have a maximum length of `Server.appIdLength` characters.
+     - Returns: The app id.
+     - Throws: `RendezvousError` errors
+     - Note: Possible Errors:
+     - `invalidRequest`, if the request doesn't contain an app id, or if the id is not `Server.appIdLength` characters.
+     */
+    func appId() throws -> Data {
+        let id = try binary(header: .appId)
+        guard id.count == Server.appIdLength else {
+            throw RendezvousError.invalidRequest
+        }
+        return id
+    }
+    
     private func key(header: HeaderKey) throws -> Data {
         let key = try binary(header: header)
         guard key.count == Curve25519.keyLength else {

@@ -45,3 +45,16 @@ extension RV_Topic: TimestampedProtobuf {
         }
     }
 }
+
+extension RV_InternalUser {
+    
+    func devices(for appId: Data) -> [Data] {
+        return devices.compactMap {
+            // Filter for devices of the right app.
+            guard $0.application == appId else {
+                return nil
+            }
+            return $0.deviceKey
+        }
+    }
+}

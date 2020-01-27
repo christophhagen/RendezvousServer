@@ -95,7 +95,7 @@ extension Server {
         
         // Add the message to each device in the topic
         for member in topic.info.members {
-            guard let devices = self.userDevices(member.info.userKey) else {
+            guard let devices = self.userDevices(member.info.userKey, app: topic.info.application) else {
                 continue
             }
             for device in devices {

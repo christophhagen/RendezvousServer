@@ -32,4 +32,7 @@ enum HeaderKey: String {
     
     /// The public key of a requested user
     case receiver = "receiver"
+    
+    /// The identifier of the app.
+    case appId = "app"
 }

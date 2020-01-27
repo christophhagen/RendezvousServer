@@ -18,6 +18,7 @@ import Crypto
             prekeys/
                 deviceIdentityKey // The prekeys of a device
             topickeys // The available topic keys of a user
+                appId // The topic keys for an app.
     topicdata/
         topicID/
             messageIV
@@ -142,8 +143,10 @@ final class Storage: Logger {
      - Parameter user: The public key of the user.
      - Returns: The url of the file containing the topic keys.
      */
-    private func userTopicKeyURL(_ user: Data) -> URL {
-        userURL(user).appendingPathComponent("topickeys")
+    private func userTopicKeyURL(_ user: Data, app: Data) -> URL {
+        userURL(user)
+            .appendingPathComponent("topickeys")
+            .appendingPathComponent(app.fileId)
     }
     
     /**
@@ -154,7 +157,7 @@ final class Storage: Logger {
     private func userPreKeyURL(_ user: Data) -> URL {
         userURL(user).appendingPathComponent("prekeys")
     }
-    
+
     /**
      The url containing the device pre keys of a user.
      - Parameter user: The public key of the user.
@@ -372,6 +375,7 @@ final class Storage: Logger {
      Store new topic keys for a user.
      
      - Parameter topicKeys: The topic keys to store.
+     - Parameter appId: The id of the application.
      - Parameter user: The public key of the user.
      - Returns: The topic keys available for the user.
      - Throws: `ServerError`, `BinaryEncodingError`, `BinaryDecodingError`
@@ -382,8 +386,8 @@ final class Storage: Logger {
         - `ServerError.fileWriteFailed`, if the topic keys data could not be written.
         - `ServerError.fileReadFailed`, if the file could not be read.
      */
-    func store(topicKeys: [RV_TopicKey], for user: Data) throws -> UInt32 {
-        let url = userTopicKeyURL(user)
+    func store(topicKeys: [RV_TopicKey], for appId: Data, of user: Data) throws -> UInt32 {
+        let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No previous keys exist
             try write(topicKeys: topicKeys, to: url)
@@ -397,6 +401,7 @@ final class Storage: Logger {
     /**
      Get a topic key for a user.
      
+     - Parameter appId: The id of the application.
      - Parameter user: The user for which to get the topic key.
      - Returns: The topic key.
      - Throws: `RendezvousError`, `ServerError`, `BinaryEncodingError`, `BinaryEncodingError`
@@ -409,8 +414,8 @@ final class Storage: Logger {
         - `BinaryDecodingError`, if the data is not a valid protobuf, or if the serialization fails.
         - `BinaryEncodingError`, if the serialization fails.
      */
-    func getTopicKey(of user: Data) throws -> RV_TopicKey {
-        let url = userTopicKeyURL(user)
+    func getTopicKey(for appId: Data, of user: Data) throws -> RV_TopicKey {
+        let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No keys exist
             throw RendezvousError.resourceNotAvailable

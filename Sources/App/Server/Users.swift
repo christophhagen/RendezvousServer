@@ -48,7 +48,8 @@ extension Server {
         guard bundle.info.devices.count == 1 else {
             throw RendezvousError.invalidRequest
         }
-        let deviceKeyData = bundle.info.devices[0].deviceKey
+        let device = bundle.info.devices[0]
+        let deviceKeyData = device.deviceKey
         let deviceKey = try deviceKeyData.toPublicKey()
         
         // Check that the user info is fresh.
@@ -78,8 +79,8 @@ extension Server {
             for: deviceKeyData,
             of: userKeyData)
         
-        // Store the topic keys
-        let topicKeyCount = try storage.store(topicKeys: bundle.topicKeys, for: userKeyData)
+        // Store the topic keys for the application
+        let topicKeyCount = try storage.store(topicKeys: bundle.topicKeys, for: device.application, of: userKeyData)
         
         // Add the user
         set(userInfo: bundle.info)

@@ -82,13 +82,14 @@ extension Server {
         let deviceKey = try request.devicePublicKey()
         let authToken = try request.authToken()
         let count = try request.count()
+        let appId = try request.appId()
         
         // Check if authentication is valid
         let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
         
         #warning("TODO: Exclude prekeys from requesting device")
         // Get the available device keys and return them
-        let devices = user.devices.map { $0.deviceKey }
+        let devices: [Data] = user.devices(for: appId)
         let keys = try storage.get(preKeys: count, for: devices, of: userKey)
         
         // Update the remaining count

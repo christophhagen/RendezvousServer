@@ -38,8 +38,6 @@ extension Server {
             throw RendezvousError.authenticationFailed
         }
         
-        
-        
         // Check that at least one device is present
         guard userInfo.devices.count == oldInfo.devices.count + 1 else {
             throw RendezvousError.invalidRequest

@@ -40,9 +40,10 @@ extension Server {
             request.httpBody = data
             request.addValue(deviceToken, forHTTPHeaderField: "device")
             
-            URLSession.shared.dataTask(with: request) { _, response, error in
+            let task = URLSession.shared.dataTask(with: request) { _, response, error in
                 #warning("Handle errors from push requests")
             }
+            task.resume()
         }
     }
 }

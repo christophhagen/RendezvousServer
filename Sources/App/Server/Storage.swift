@@ -152,8 +152,8 @@ final class Storage: Logger {
      - Parameter user: The public key of the user.
      - Returns: The url of the file containing the topic keys.
      */
-    private func userTopicKeyURL(_ user: Data, app: Data) -> URL {
-        userTopicKeyFolderURL(user).appendingPathComponent(app.fileId)
+    private func userTopicKeyURL(_ user: Data, app: String) -> URL {
+        userTopicKeyFolderURL(user).appendingPathComponent(app.base64URLEscaped())
     }
     
     /**
@@ -395,7 +395,7 @@ final class Storage: Logger {
         - `ServerError.fileWriteFailed`, if the topic keys data could not be written.
         - `ServerError.fileReadFailed`, if the file could not be read.
      */
-    func store(topicKeys: [RV_TopicKey], for appId: Data, of user: Data) throws -> UInt32 {
+    func store(topicKeys: [RV_TopicKey], for appId: String, of user: Data) throws -> UInt32 {
         let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No previous keys exist
@@ -423,7 +423,7 @@ final class Storage: Logger {
         - `BinaryDecodingError`, if the data is not a valid protobuf, or if the serialization fails.
         - `BinaryEncodingError`, if the serialization fails.
      */
-    func getTopicKey(for appId: Data, of user: Data) throws -> RV_TopicKey {
+    func getTopicKey(for appId: String, of user: Data) throws -> RV_TopicKey {
         let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No keys exist

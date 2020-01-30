@@ -37,8 +37,8 @@ final class Server: Logger {
     /// The length of a message id
     static let messageIdLength = 12
     
-    /// The length of an app id
-    static let appIdLength = 10
+    /// The maximum length of an app id
+    static let maximumAppIdLength = 10
     
     /// The maximum length of message metadata
     static let maximumMetadataLength = 100
@@ -305,7 +305,7 @@ final class Server: Logger {
         internalUsers[publicKey]
     }
     
-    func userDevices(_ user: Data, app: Data) -> [RV_InternalUser.Device]? {
+    func userDevices(_ user: Data, app: String) -> [RV_InternalUser.Device]? {
         internalUsers[user]?.devices.filter { $0.application == app }
     }
     

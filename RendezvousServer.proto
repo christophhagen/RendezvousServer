@@ -57,7 +57,7 @@ message InternalUser {
         bool isActive = 3;
         
         // The app associated with the device.
-        bytes application = 4;
+        string application = 4;
     }
     
 }
@@ -227,7 +227,7 @@ message TopicKeyBundle {
     bytes authToken = 3;
     
     // The app associated with the topic keys.
-    bytes application = 4;
+    string application = 4;
     
     // The topic keys
     repeated TopicKey topicKeys = 5;
@@ -249,7 +249,7 @@ message TopicKeyRequest {
     bytes authToken = 3;
     
     // The app associated with the topic keys.
-    bytes application = 4;
+    string application = 4;
     
     // The new prekeys
     repeated bytes users = 5;
@@ -306,7 +306,7 @@ message Topic {
     bytes topicId = 1;
     
     // The application in which the topic is created
-    bytes application = 2;
+    string application = 2;
     
     // The time when the topic message was created (in seconds since 1.1.1970)
     uint32 creationTime = 3;
@@ -474,7 +474,7 @@ message ClientData {
     string serverURL = 1;
     
     // The application identifier
-    bytes appication = 2;
+    string appication = 2;
     
     // The private identity key of the user
     bytes userPrivateKey = 3;

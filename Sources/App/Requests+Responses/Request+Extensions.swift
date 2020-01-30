@@ -160,11 +160,11 @@ extension Request {
      - Returns: The app id.
      - Throws: `RendezvousError` errors
      - Note: Possible Errors:
-     - `invalidRequest`, if the request doesn't contain an app id, or if the id is not `Server.appIdLength` characters.
+     - `invalidRequest`, if the request doesn't contain an app id, or if the id larger than `Server.maximumAppIdLength` characters.
      */
-    func appId() throws -> Data {
-        let id = try binary(header: .appId)
-        guard id.count == Server.appIdLength else {
+    func appId() throws -> String {
+        let id = try get(header: .appId)
+        guard id.count <= Server.maximumAppIdLength else {
             throw RendezvousError.invalidRequest
         }
         return id

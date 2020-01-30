@@ -48,7 +48,7 @@ extension RV_Topic: TimestampedProtobuf {
 
 extension RV_InternalUser {
     
-    func devices(for appId: Data) -> [Data] {
+    func devices(for appId: String) -> [Data] {
         return devices.compactMap {
             // Filter for devices of the right app.
             guard $0.application == appId else {

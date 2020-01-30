@@ -87,7 +87,7 @@ struct RV_InternalUser {
     var isActive: Bool = false
 
     /// The app associated with the device.
-    var application: Data = SwiftProtobuf.Internal.emptyData
+    var application: String = String()
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -437,7 +437,7 @@ struct RV_TopicKeyBundle {
   var authToken: Data = SwiftProtobuf.Internal.emptyData
 
   /// The app associated with the topic keys.
-  var application: Data = SwiftProtobuf.Internal.emptyData
+  var application: String = String()
 
   /// The topic keys
   var topicKeys: [RV_TopicKey] = []
@@ -466,7 +466,7 @@ struct RV_TopicKeyRequest {
   var authToken: Data = SwiftProtobuf.Internal.emptyData
 
   /// The app associated with the topic keys.
-  var application: Data = SwiftProtobuf.Internal.emptyData
+  var application: String = String()
 
   /// The new prekeys
   var users: [Data] = []
@@ -581,7 +581,7 @@ struct RV_Topic {
   var topicID: Data = SwiftProtobuf.Internal.emptyData
 
   /// The application in which the topic is created
-  var application: Data = SwiftProtobuf.Internal.emptyData
+  var application: String = String()
 
   /// The time when the topic message was created (in seconds since 1.1.1970)
   var creationTime: UInt32 = 0
@@ -901,7 +901,7 @@ struct RV_ClientData {
   }
 
   /// The application identifier
-  var appication: Data {
+  var appication: String {
     get {return _storage._appication}
     set {_uniqueStorage()._appication = newValue}
   }
@@ -1270,7 +1270,7 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
       case 1: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 2: try decoder.decodeSingularUInt32Field(value: &self.creationTime)
       case 3: try decoder.decodeSingularBoolField(value: &self.isActive)
-      case 4: try decoder.decodeSingularBytesField(value: &self.application)
+      case 4: try decoder.decodeSingularStringField(value: &self.application)
       default: break
       }
     }
@@ -1287,7 +1287,7 @@ extension RV_InternalUser.Device: SwiftProtobuf.Message, SwiftProtobuf._MessageI
       try visitor.visitSingularBoolField(value: self.isActive, fieldNumber: 3)
     }
     if !self.application.isEmpty {
-      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+      try visitor.visitSingularStringField(value: self.application, fieldNumber: 4)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1855,7 +1855,7 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
       case 1: try decoder.decodeSingularBytesField(value: &self.publicKey)
       case 2: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 3: try decoder.decodeSingularBytesField(value: &self.authToken)
-      case 4: try decoder.decodeSingularBytesField(value: &self.application)
+      case 4: try decoder.decodeSingularStringField(value: &self.application)
       case 5: try decoder.decodeRepeatedMessageField(value: &self.topicKeys)
       case 6: try decoder.decodeRepeatedMessageField(value: &self.messages)
       default: break
@@ -1874,7 +1874,7 @@ extension RV_TopicKeyBundle: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
       try visitor.visitSingularBytesField(value: self.authToken, fieldNumber: 3)
     }
     if !self.application.isEmpty {
-      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+      try visitor.visitSingularStringField(value: self.application, fieldNumber: 4)
     }
     if !self.topicKeys.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.topicKeys, fieldNumber: 5)
@@ -1913,7 +1913,7 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
       case 1: try decoder.decodeSingularBytesField(value: &self.publicKey)
       case 2: try decoder.decodeSingularBytesField(value: &self.deviceKey)
       case 3: try decoder.decodeSingularBytesField(value: &self.authToken)
-      case 4: try decoder.decodeSingularBytesField(value: &self.application)
+      case 4: try decoder.decodeSingularStringField(value: &self.application)
       case 5: try decoder.decodeRepeatedBytesField(value: &self.users)
       default: break
       }
@@ -1931,7 +1931,7 @@ extension RV_TopicKeyRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
       try visitor.visitSingularBytesField(value: self.authToken, fieldNumber: 3)
     }
     if !self.application.isEmpty {
-      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 4)
+      try visitor.visitSingularStringField(value: self.application, fieldNumber: 4)
     }
     if !self.users.isEmpty {
       try visitor.visitRepeatedBytesField(value: self.users, fieldNumber: 5)
@@ -2176,7 +2176,7 @@ extension RV_Topic: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationB
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularBytesField(value: &self.topicID)
-      case 2: try decoder.decodeSingularBytesField(value: &self.application)
+      case 2: try decoder.decodeSingularStringField(value: &self.application)
       case 3: try decoder.decodeSingularUInt32Field(value: &self.creationTime)
       case 4: try decoder.decodeSingularUInt32Field(value: &self.indexOfMessageCreator)
       case 5: try decoder.decodeRepeatedMessageField(value: &self.members)
@@ -2192,7 +2192,7 @@ extension RV_Topic: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationB
       try visitor.visitSingularBytesField(value: self.topicID, fieldNumber: 1)
     }
     if !self.application.isEmpty {
-      try visitor.visitSingularBytesField(value: self.application, fieldNumber: 2)
+      try visitor.visitSingularStringField(value: self.application, fieldNumber: 2)
     }
     if self.creationTime != 0 {
       try visitor.visitSingularUInt32Field(value: self.creationTime, fieldNumber: 3)
@@ -2755,7 +2755,7 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
 
   fileprivate class _StorageClass {
     var _serverURL: String = String()
-    var _appication: Data = SwiftProtobuf.Internal.emptyData
+    var _appication: String = String()
     var _userPrivateKey: Data = SwiftProtobuf.Internal.emptyData
     var _devicePrivateKey: Data = SwiftProtobuf.Internal.emptyData
     var _devicePublicKey: Data = SwiftProtobuf.Internal.emptyData
@@ -2796,7 +2796,7 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
       while let fieldNumber = try decoder.nextFieldNumber() {
         switch fieldNumber {
         case 1: try decoder.decodeSingularStringField(value: &_storage._serverURL)
-        case 2: try decoder.decodeSingularBytesField(value: &_storage._appication)
+        case 2: try decoder.decodeSingularStringField(value: &_storage._appication)
         case 3: try decoder.decodeSingularBytesField(value: &_storage._userPrivateKey)
         case 4: try decoder.decodeSingularBytesField(value: &_storage._devicePrivateKey)
         case 5: try decoder.decodeSingularBytesField(value: &_storage._devicePublicKey)
@@ -2817,7 +2817,7 @@ extension RV_ClientData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
         try visitor.visitSingularStringField(value: _storage._serverURL, fieldNumber: 1)
       }
       if !_storage._appication.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._appication, fieldNumber: 2)
+        try visitor.visitSingularStringField(value: _storage._appication, fieldNumber: 2)
       }
       if !_storage._userPrivateKey.isEmpty {
         try visitor.visitSingularBytesField(value: _storage._userPrivateKey, fieldNumber: 3)

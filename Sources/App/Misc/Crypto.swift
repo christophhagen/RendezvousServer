@@ -31,7 +31,7 @@ func constantTimeCompare(_ lhs: Data, _ rhs: Data) -> Bool {
 Compare two bytes in (hopefully) constant time.
 - Returns: `true`, if the values match.
 */
-func constantTimeCompare(_ lhs: UInt8, _ rhs: UInt8) -> Bool {
+private func constantTimeCompare(_ lhs: UInt8, _ rhs: UInt8) -> Bool {
     var areEqual = true
     for i in 0..<8 {
         areEqual = areEqual && (lhs & (1 << i) == rhs & (1 << i))

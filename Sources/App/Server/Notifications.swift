@@ -8,6 +8,9 @@
 import Foundation
 import Vapor
 import SwiftProtobuf
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 extension Server {
     

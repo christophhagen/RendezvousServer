@@ -35,4 +35,7 @@ enum HeaderKey: String {
     
     /// The identifier of the app.
     case appId = "app"
+    
+    /// A push notification device token
+    case pushToken = "push"
 }

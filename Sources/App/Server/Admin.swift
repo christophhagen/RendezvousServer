@@ -13,13 +13,14 @@ extension Server {
     /**
      Check that the admin credentials are valid.
      
-     - The request must contain the current admin token in the request header.
-     
      - Parameter request: The received request.
      - Throws: `RendezvousError` errors
+     
+     - Note: The request must contain the current admin token in the request header.
+     
      - Note: Possible errors:
-     - `invalidRequest`, if the request doesn't contain an authentication token.
-     - `authenticationFailed`, if the admin token is invalid.
+        - `invalidRequest`, if the request doesn't contain an authentication token.
+        - `authenticationFailed`, if the admin token is invalid.
      */
     func checkAdminAccess(_ request: Request) throws {
         // Check authentication
@@ -97,6 +98,45 @@ extension Server {
         
         // Return the pin, expiry and username in the response
         return try user.serializedData()
+    }
+    
+    /**
+     Handle a request to delete an existing user.
+     
+     The request must contain in the HTTP body:
+     - A protobuf object of type `RV_InternalUser`
+     
+     - Parameter request: The received request.
+     - Throws: `RendezvousError` and `ServerError` errors
+     
+     - Note: The request must contain the current admin token and the user key in the request header.
+      
+     - Note: Possible errors:
+        - `RendezvousError.invalidRequest`, if the request doesn't contain an authentication token or user key.
+        - `RendezvousError.authenticationFailed`, if the admin token is invalid.
+        - `ServerError.deletionFailed`, if the user folder could not be deleted.
+     */
+    func deleteUserAsAdmin(_ request: Request) throws {
+        try checkAdminAccess(request)
+        
+        let userKey = try request.userPublicKey()
+
+        // Check that the user exists.
+        guard let user = self.user(with: userKey) else {
+            throw RendezvousError.authenticationFailed
+        }
+        
+        // Delete the user data
+        try storage.deleteData(forUser: userKey)
+        
+        // Delete the user
+        delete(user: userKey)
+        
+        // Delete all of the users devices
+        for device in user.devices {
+            delete(device: device.deviceKey)
+        }
+        didChangeData()
     }
     
 }

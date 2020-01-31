@@ -26,9 +26,10 @@ public func routes(_ router: Router) throws {
     }
     
     // Allow registration of a new user
-    router.postCatching("user", "allow", call: server.allowUser)
+    router.postCatching("admin", "allow", call: server.allowUser)
     
-    #warning("Allow admin to delete users")
+    // Allow admin to delete users
+    router.postCatching("admin", "delete", call: server.deleteUserAsAdmin)
     
     // MARK: Users
     

@@ -48,7 +48,7 @@ extension Server {
                 throw RendezvousError.invalidRequest
         }
         
-        try authenticate(device: upload.deviceKey, token: upload.authToken)
+        try authenticateDevice(upload.deviceKey, token: upload.authToken)
         
         // Get the existing topic
         guard let topic = self.topic(id: upload.topicID) else {
@@ -111,13 +111,39 @@ extension Server {
     }
     
     func getMessages(_ request: Request) throws -> Data {
-        let deviceKey = try request.devicePublicKey()
-        let authToken = try request.authToken()
-        
         // Check if authentication is valid
-        _ = try authenticate(device: deviceKey, token: authToken)
+        let deviceKey = try authenticateDevice(request)
         
         let data = getAndClearDeviceData(deviceKey)
         return try data.serializedData()
+    }
+    
+    /**
+     Get a file in a topic.
+     
+     - Parameter request: The received GET request.
+     - Returns: The file data
+     - Throws: `RendezvousError`, `ServerError`
+     - Note: Possible errors:
+        - `RendezvousError.authenticationFailed`, if the authentication fails, or the user is not a topic member.
+        - `ServerError.fileReadFailed`, if the file could not be read.
+        - `RendezvousError.resourceNotAvailable`, if the file doesn’t exist
+     */
+    func getFile(_ request: Request) throws -> Data {
+        // Check if authentication is valid
+        let user = try authenticateUser(request)
+        
+        // Get the ids from the path
+        let topicId = try request.topicId()
+        let file = try request.fileId()
+        
+        // Check that the user has permissions for the topic
+        guard let topic = self.topic(id: topicId),
+            topic.info.members.contains(where: { $0.info.userKey == user }) else {
+                throw RendezvousError.authenticationFailed
+        }
+        
+        // Return the file data
+        return try storage.get(file: file, in: topicId)
     }
 }

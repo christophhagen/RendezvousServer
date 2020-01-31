@@ -100,5 +100,10 @@ public func routes(_ router: Router) throws {
     
     // Download new messages for a device
     router.getCatching("device", "messages", call: server.getMessages)
+    
+    if server.shouldServeStaticFiles {
+        
+        router.getCatching("files", String.parameter, String.parameter, call: server.getFile)
+    }
       
 }

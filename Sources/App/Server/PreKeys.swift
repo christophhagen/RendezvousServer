@@ -33,9 +33,9 @@ extension Server {
         let preKeyRequest = try RV_DevicePrekeyUploadRequest(validRequest: data)
         
         // Check if authentication is valid
-        _ = try authenticateDevice(user: preKeyRequest.publicKey,
-                                   device: preKeyRequest.deviceKey,
-                                   token: preKeyRequest.authToken)
+        _ = try authenticateUser(preKeyRequest.publicKey,
+                                 device: preKeyRequest.deviceKey,
+                                 token: preKeyRequest.authToken)
         
         let deviceKey = try preKeyRequest.deviceKey.toPublicKey()
         
@@ -85,7 +85,7 @@ extension Server {
         let appId = try request.appId()
         
         // Check if authentication is valid
-        let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
+        let user = try authenticateUser(userKey, device: deviceKey, token: authToken)
         
         #warning("TODO: Exclude prekeys from requesting device")
         // Get the available device keys and return them

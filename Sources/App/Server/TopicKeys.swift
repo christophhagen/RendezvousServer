@@ -18,9 +18,9 @@ extension Server {
         let bundle = try RV_TopicKeyBundle(validRequest: data)
         
         // Check if authentication is valid
-        let user = try authenticateDevice(user: bundle.publicKey,
-                                          device: bundle.deviceKey,
-                                          token: bundle.authToken)
+        let user = try authenticateUser(bundle.publicKey,
+                                        device: bundle.deviceKey,
+                                        token: bundle.authToken)
         
         // Check that all topic keys have valid signatures
         let userKey = try user.publicKey.toPublicKey()
@@ -89,7 +89,7 @@ extension Server {
         let appId = try request.appId()
         
         // Check if authentication is valid
-        let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
+        let user = try authenticateUser(userKey, device: deviceKey, token: authToken)
         #warning("Add rate limit for topic key requests.")
         
         // Get a topic key
@@ -122,7 +122,7 @@ extension Server {
         let request = try RV_TopicKeyRequest(validRequest: body)
         
         // Check if authentication is valid
-        _ = try authenticateDevice(user: request.publicKey, device: request.deviceKey, token: request.authToken)
+        _ = try authenticateUser(request.publicKey, device: request.deviceKey, token: request.authToken)
         
         let keys = request.users.compactMap { userKey -> RV_TopicKeyResponse.User? in
             // Check if user exists

@@ -132,7 +132,7 @@ extension Server {
         let authToken = try request.authToken()
         
         // Check if authentication is valid
-        let user = try authenticateDevice(user: userKey, device: deviceKey, token: authToken)
+        let user = try authenticateUser(userKey, device: deviceKey, token: authToken)
         
         // Send the current user info
         return try user.serializedData()

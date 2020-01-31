@@ -19,7 +19,7 @@ import Crypto
                 deviceIdentityKey // The prekeys of a device
             topickeys/ // The available topic keys of a user
                 appId // The topic keys for an app.
-    topicdata/
+    files/
         topicID/
             messageIV
     topics/
@@ -179,7 +179,7 @@ final class Storage: Logger {
      Get the url where topic messages are stored.
      */
     private func topicDataURL(_ topic: Data) -> URL {
-        base.appendingPathComponent("topicdata").appendingPathComponent(topic.fileId)
+        base.appendingPathComponent("files").appendingPathComponent(topic.fileId)
     }
     
     /**
@@ -543,27 +543,6 @@ final class Storage: Logger {
     // MARK: Messages
     
     /**
-     Store a file in a topic.
-     
-     - Parameter file: The file data to store
-     - Parameter id: The file id
-     - Parameter topic: The topic id
-     
-     - Throws: `ServerError`, `RendezvousError`
-     
-     - Note: Possible errors:
-        - `ServerError.fileWriteFailed`, if the data could not be written.
-        - `RendezvousError.resourceAlreadyExists`, if the message already exists
-     */
-    func store(file: Data, with id: Data, in topic: Data) throws {
-        let url = topicDataURL(topic, message: id)
-        guard !dataExists(at: url) else {
-            throw RendezvousError.resourceAlreadyExists
-        }
-        try write(data: file, to: url)
-    }
-    
-    /**
      Store a message in a message chain.
      
      - Parameter message: The message to store
@@ -589,6 +568,49 @@ final class Storage: Logger {
         let data = try chain.serializedData()
         try write(data: data, to: url)
         return newOutput
+    }
+    
+    // MARK: Files
+    
+    /**
+     Store a file in a topic.
+     
+     - Parameter file: The file data to store
+     - Parameter id: The file id
+     - Parameter topic: The topic id
+     
+     - Throws: `ServerError`, `RendezvousError`
+     
+     - Note: Possible errors:
+        - `ServerError.fileWriteFailed`, if the data could not be written.
+        - `RendezvousError.resourceAlreadyExists`, if the message already exists
+     */
+    func store(file: Data, with id: Data, in topic: Data) throws {
+        let url = topicDataURL(topic, message: id)
+        guard !dataExists(at: url) else {
+            throw RendezvousError.resourceAlreadyExists
+        }
+        try write(data: file, to: url)
+    }
+    
+    /**
+     Get a file in a topic.
+     
+     - Parameter file: The file id
+     - Parameter topic: The topic id
+     
+     - Throws: `ServerError`, `RendezvousError`
+     
+     - Note: Possible errors:
+        - `ServerError.fileReadFailed`, if the file could not be read.
+        - `RendezvousError.resourceNotAvailable`, if the message doesn't exist
+     */
+    func get(file: Data, in topic: Data) throws -> Data {
+        let url = topicDataURL(topic, message: file)
+        guard dataExists(at: url) else {
+            throw RendezvousError.resourceNotAvailable
+        }
+        return try data(at: url)
     }
     
     /**

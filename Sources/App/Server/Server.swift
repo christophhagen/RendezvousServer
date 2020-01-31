@@ -217,7 +217,7 @@ final class Server: Logger {
      - Returns: The information about the user.
      - Throws: `RendezvousError.authenticationFailed`, if the user or device doesn't exist, or the token is invalid
      */
-    func authenticateDevice(user: UserKey, device: DeviceKey, token: Data) throws -> RV_InternalUser {
+    func authenticateUser(_ user: UserKey, device: DeviceKey, token: Data) throws -> RV_InternalUser {
         // Check if authentication is valid
         guard let user = internalUsers[user],
             user.devices.contains(where: {$0.deviceKey == device}),
@@ -229,18 +229,51 @@ final class Server: Logger {
     }
     
     /**
+     Check the authentication of a user.
+     
+     - Parameter request: The received request, containing user key,device key and auth token in the headers
+     - Returns: The user key
+     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
+     */
+    func authenticateUser(_ request: Request) throws -> UserKey {
+        let userKey = try request.userPublicKey()
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
+        
+        // Check if authentication is valid
+        _ = try authenticateUser(userKey, device: deviceKey, token: authToken)
+        return userKey
+    }
+    
+    /**
     Check the authentication of a device.
     
     - Parameter device: The received device public key
     - Parameter token: The received authentication token
     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
     */
-    func authenticate(device: DeviceKey, token: Data) throws {
+    func authenticateDevice(_ device: DeviceKey, token: Data) throws {
         // Check if authentication is valid
         guard let deviceToken = authTokens[device],
             constantTimeCompare(deviceToken, token) else {
                 throw RendezvousError.authenticationFailed
         }
+    }
+    
+    /**
+     Check the authentication of a device.
+     
+     - Parameter request: The received request, containing device key and auth token in the headers
+     - Returns: The device key
+     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
+     */
+    func authenticateDevice(_ request: Request) throws -> DeviceKey {
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
+        
+        // Check if authentication is valid
+        try authenticateDevice(deviceKey, token: authToken)
+        return deviceKey
     }
     
     // MARK: Internal state

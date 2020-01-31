@@ -9,6 +9,12 @@ import Foundation
 import Vapor
 import CryptoKit25519
 
+/// The public identity key of a device
+typealias DeviceKey = Data
+
+/// The public identity key of a user
+typealias UserKey = Data
+
 /**
  The `Server` class handles all request related to user and device management, as well as adminstrative tasks.
  */
@@ -52,19 +58,19 @@ final class Server: Logger {
     var adminToken: Data
     
     /// The users currently registered with the server.
-    private var internalUsers = [Data : RV_InternalUser]()
+    private var internalUsers = [UserKey : RV_InternalUser]()
     
     /// The authentication tokens for all internal devices.
-    private var authTokens: [Data : Data]
+    private var authTokens: [DeviceKey : Data]
     
     /// The tokens to authenticate the messages to the notification servers
-    private var notificationTokens: [Data : Data]
+    private var notificationTokens: [DeviceKey : Data]
     
     /// The data to send to each internal device.
-    private var deviceData: [Data : RV_DeviceDownload]
+    private var deviceData: [DeviceKey : RV_DeviceDownload]
     
     /// The data last sent to each internal device (in case of delivery failure)
-    private var oldDeviceData: [Data : RV_DeviceDownload]
+    private var oldDeviceData: [DeviceKey : RV_DeviceDownload]
     
     /// The info about all topics currently available on the server
     private var topics: [Data : RV_TopicState]
@@ -145,41 +151,38 @@ final class Server: Logger {
     
     /**
      Create a management instance from a protobuf object.
+     
      - Parameter object: The protobuf object containing the data
-     - Parameter delegate: The delegate which handles file operations.
      */
     private init(object: RV_ManagementData, storage: Storage, development: Bool, serveStaticFiles: Bool) {
         self.adminToken = object.adminToken
         self.usersAllowedToRegister = object.allowedUsers
-        self.internalUsers = [:]
-        self.authTokens = [:]
-        self.notificationTokens = [:]
-        self.deviceData = [:]
-        self.oldDeviceData = [:]
-        self.topics = [:]
+        self.internalUsers = object.internalUsers.dict { $0.publicKey }
+        self.authTokens = object.authTokens.reduce(into: [:]) { $0[$1.key] = $1.value }
+        self.notificationTokens = object.notificationTokens.dict { ($0.key, $0.value) }
+        self.deviceData = object.deviceData.dict { ($0.deviceKey, $0.data) }
+        self.oldDeviceData = object.oldDeviceData.dict { ($0.deviceKey, $0.data) }
+        self.topics = object.topics.dict { $0.info.topicID }
         
         self.defaultNotificationServer = URL(string: object.notificationServer)!
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
-        
-        object.internalUsers.forEach { internalUsers[$0.publicKey] = $0 }
-        object.authTokens.forEach { authTokens[$0.deviceKey] = $0.authToken }
-        #warning("TODO: Load/add device data, notification tokens and topics")
     }
     
     /// Serialize the management data for storage on disk.
     private var data: Data {
         let object = RV_ManagementData.with { item in
             item.adminToken = adminToken
-            item.internalUsers = Array(internalUsers.values)
             item.allowedUsers = usersAllowedToRegister
-            item.authTokens = authTokens.map { (key, token) in
-                RV_ManagementData.AuthToken.with {
-                    $0.deviceKey = key
-                    $0.authToken = token
-                }
-            }
+            item.internalUsers = Array(internalUsers.values)
+            item.authTokens = authTokens.map(RV_ManagementData.KeyValuePair.from)
+            item.notificationTokens = notificationTokens.map(RV_ManagementData.KeyValuePair.from)
+            item.deviceData = deviceData.map(RV_ManagementData.DeviceData.from)
+            item.oldDeviceData = oldDeviceData.map(RV_ManagementData.DeviceData.from)
+            item.topics = Array(topics.values)
+            
+            item.notificationServer = defaultNotificationServer.path
         }
         
         // Protobuf serialization should never fail, since it is correctly setup.
@@ -214,7 +217,7 @@ final class Server: Logger {
      - Returns: The information about the user.
      - Throws: `RendezvousError.authenticationFailed`, if the user or device doesn't exist, or the token is invalid
      */
-    func authenticateDevice(user: Data, device: Data, token: Data) throws -> RV_InternalUser {
+    func authenticateDevice(user: UserKey, device: DeviceKey, token: Data) throws -> RV_InternalUser {
         // Check if authentication is valid
         guard let user = internalUsers[user],
             user.devices.contains(where: {$0.deviceKey == device}),
@@ -232,7 +235,7 @@ final class Server: Logger {
     - Parameter token: The received authentication token
     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
     */
-    func authenticate(device: Data, token: Data) throws {
+    func authenticate(device: DeviceKey, token: Data) throws {
         // Check if authentication is valid
         guard let deviceToken = authTokens[device],
             constantTimeCompare(deviceToken, token) else {
@@ -297,15 +300,15 @@ final class Server: Logger {
         internalUsers.values.contains { $0.name == user }
     }
     
-    func userExists(_ user: Data) -> Bool {
+    func userExists(_ user: UserKey) -> Bool {
         internalUsers[user] != nil
     }
     
-    func user(with publicKey: Data) -> RV_InternalUser? {
+    func user(with publicKey: UserKey) -> RV_InternalUser? {
         internalUsers[publicKey]
     }
     
-    func userDevices(_ user: Data, app: String) -> [RV_InternalUser.Device]? {
+    func userDevices(_ user: UserKey, app: String) -> [RV_InternalUser.Device]? {
         internalUsers[user]?.devices.filter { $0.application == app }
     }
     
@@ -327,29 +330,29 @@ final class Server: Logger {
         return topics[id]
     }
     
-    func add(topicMessage: RV_DeviceDownload.Message, for device: Data, of user: Data) {
+    func add(topicMessage: RV_DeviceDownload.Message, for device: DeviceKey, of user: UserKey) {
         deviceData[device]!.messages.append(topicMessage)
         push(topicMessage: topicMessage, to: device, of: user)
     }
 
-    func add(topicUpdate: RV_Topic, for device: Data, of user: Data) {
+    func add(topicUpdate: RV_Topic, for device: DeviceKey, of user: UserKey) {
         deviceData[device]!.topicUpdates.append(topicUpdate)
         push(topicUpdate: topicUpdate, to: device, of: user)
     }
     
-    func add(topicKeyMessages messages: [RV_TopicKeyMessage], for device: Data) {
+    func add(topicKeyMessages messages: [RV_TopicKeyMessage], for device: DeviceKey) {
         deviceData[device]!.topicKeyMessages.append(contentsOf: messages)
     }
     
-    func set(remainingTopicKeys count: UInt32, for device: Data) {
+    func set(remainingTopicKeys count: UInt32, for device: DeviceKey) {
         deviceData[device]!.remainingTopicKeys = count
     }
     
-    func set(remainingPreKeys count: UInt32, for device: Data) {
+    func set(remainingPreKeys count: UInt32, for device: DeviceKey) {
         deviceData[device]!.remainingPreKeys = count
     }
     
-    func set(authToken: Data, for device: Data) {
+    func set(authToken: Data, for device: DeviceKey) {
         authTokens[device] = authToken
     }
     
@@ -357,17 +360,17 @@ final class Server: Logger {
         internalUsers[userInfo.publicKey] = userInfo
     }
     
-    func decrementRemainingTopicKeys(for device: Data) {
+    func decrementRemainingTopicKeys(for device: DeviceKey) {
         deviceData[device]!.remainingTopicKeys -= 1
     }
     
-    func deviceExists(_ device: Data) -> Bool {
+    func deviceExists(_ device: DeviceKey) -> Bool {
         authTokens[device] != nil
     }
     
     // MARK: Push
     
-    func notificationServer(for user: Data) -> URL {
+    func notificationServer(for user: UserKey) -> URL {
         let server = internalUsers[user]!.notificationServer
         guard server != "" else {
             return defaultNotificationServer
@@ -376,15 +379,15 @@ final class Server: Logger {
         return URL(string: server)!
     }
     
-    func add(notificationToken: Data, for device: Data) {
+    func add(notificationToken: Data, for device: DeviceKey) {
         notificationTokens[device] = notificationToken
     }
     
-    func notificationToken(for device: Data) -> Data? {
+    func notificationToken(for device: DeviceKey) -> Data? {
         notificationTokens[device]
     }
     
-    func getAndClearDeviceData(_ device: Data) -> RV_DeviceDownload {
+    func getAndClearDeviceData(_ device: DeviceKey) -> RV_DeviceDownload {
         let data = deviceData[device]!
         deviceData[device] = .with {
             $0.remainingPreKeys = data.remainingPreKeys
@@ -394,16 +397,16 @@ final class Server: Logger {
         return data
     }
     
-    func oldDeviceData(_ device: Data) -> RV_DeviceDownload {
+    func oldDeviceData(_ device: DeviceKey) -> RV_DeviceDownload {
         oldDeviceData[device]!
     }
     
-    func createDeviceData(for device: Data) {
+    func createDeviceData(for device: DeviceKey) {
         deviceData[device] = .init()
         oldDeviceData[device] = .init()
     }
     
-    func createDeviceData(for device: Data, remainingPreKeys: UInt32, remainingTopicKeys: UInt32) {
+    func createDeviceData(for device: DeviceKey, remainingPreKeys: UInt32, remainingTopicKeys: UInt32) {
         deviceData[device] = .with {
             $0.remainingPreKeys = remainingPreKeys
             $0.remainingTopicKeys = remainingTopicKeys
@@ -411,12 +414,12 @@ final class Server: Logger {
         oldDeviceData[device] = .init()
     }
     
-    func delete(device: Data) {
+    func delete(device: DeviceKey) {
         authTokens[device] = nil
         deviceData[device] = nil
     }
     
-    func delete(user: Data) {
+    func delete(user: UserKey) {
         internalUsers[user] = nil
     }
     
@@ -434,4 +437,18 @@ final class Server: Logger {
         return randomBytes(count: Server.authTokenLength)
     }
 
+}
+
+extension Array {
+    
+    func dict<Key>(_ assigningKeys: (Element) -> Key) -> [Key : Element] {
+        return reduce(into: [:]) { $0[assigningKeys($1)] = $1 }
+    }
+    
+    func dict<Key,Value>(_ assigningKeysAndValues: (Element) -> (Key, Value)) -> [Key : Value] {
+        return reduce(into: [:]) { result, element in
+            let (key, value) = assigningKeysAndValues(element)
+            result[key] = value
+        }
+    }
 }

@@ -55,7 +55,7 @@ extension Server {
             throw RendezvousError.invalidRequest
         }
         
-        let deviceKeyData = device.deviceKey
+        let deviceKeyData: DeviceKey = device.deviceKey
         let deviceKey = try deviceKeyData.toPublicKey()
         
         // Check that the user info is fresh.

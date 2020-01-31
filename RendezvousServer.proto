@@ -117,30 +117,6 @@ message DeviceDownload {
     }
 }
 
-// A push token for a device
-message NotificationToken {
-    
-    // The type of notifications for this device.
-    enum NotificationType {
-        // No push capabilities for the device
-        PUSH_DISABLED = 0;
-        // The device is a regular iOS device
-        IOS_DEVICE = 1;
-        // The device is used for iOS development
-        IOS_DEVELOPMENT_DEVICE = 2;
-        // The device is a regular iOS device using a notification extension
-        IOS_NOTIFICATION_EXTENSION = 3;
-        // The device is a development iOS device using a notification extension
-        IOS_DEVELOPMENT_NOTIFICATION_EXTENSION = 4;
-    }
-    
-    // The type of push service to use for the device.
-    NotificationType pushType = 1;
-    
-    // The binary push token for notifications
-    bytes pushToken = 2;
-}
-
 // MARK: - PreKeys
 
 // A device prekey is used to protect the exchange of topic prekeys.
@@ -450,21 +426,43 @@ message ManagementData {
     // The users allowed to register, index by their names
     map<string, AllowedUser> allowedUsers = 3;
     
-    // A pair of device id and authentication token
-    message AuthToken {
-        
-        // The device identifier
-        bytes deviceKey = 1;
-        
-        // The authentication token for the device
-        bytes authToken = 2;
-    }
-    
-    // The authentication tokens of all devices
-    repeated AuthToken authTokens = 4;
+    // The authentication tokens of all devices (key: deviceKey, value: authToken)
+    repeated KeyValuePair authTokens = 4;
     
     // The server to use for push notifications
     string notificationServer = 5;
+    
+    // The tokens to authenticate the messages to the notification servers
+    repeated KeyValuePair notificationTokens = 6;
+    
+    // The data to send to each internal device.
+    repeated DeviceData deviceData = 7;
+    
+    // The data last sent to each internal device (in case of delivery failure)
+    repeated DeviceData oldDeviceData = 8;
+    
+    // The info about all topics currently available on the server
+    repeated TopicState topics = 9;
+    
+    // A binary key and a binary value for a dictionary
+    message KeyValuePair {
+        
+        // The key of a dictionary
+        bytes key = 1;
+        
+        // The value associated with the key
+        bytes value = 2;
+    }
+    
+    // The data to send to an internal device
+    message DeviceData {
+        
+        // The device public key
+        bytes deviceKey = 1;
+        
+        // The data for the device
+        DeviceDownload data = 2;
+    }
 }
 
 // All data of a client

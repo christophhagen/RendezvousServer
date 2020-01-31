@@ -124,7 +124,7 @@ extension Request {
      - Note: Possible Errors:
      - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
      */
-    func devicePublicKey() throws -> Data {
+    func devicePublicKey() throws -> DeviceKey {
         return try key(header: .device)
     }
     
@@ -137,7 +137,7 @@ extension Request {
      - Note: Possible Errors:
         - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
     */
-    func userPublicKey() throws -> Data {
+    func userPublicKey() throws -> UserKey {
         return try key(header: .user)
     }
     
@@ -150,7 +150,7 @@ extension Request {
      - Note: Possible Errors:
         - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
      */
-    func receiverPublicKey() throws -> Data {
+    func receiverPublicKey() throws -> UserKey {
         return try key(header: .receiver)
     }
     

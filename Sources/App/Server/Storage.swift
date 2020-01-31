@@ -134,7 +134,7 @@ final class Storage: Logger {
      - Parameter user: The public key of the user.
      - Returns: The url of the user folder.
      */
-    private func userURL(_ user: Data) -> URL {
+    private func userURL(_ user: UserKey) -> URL {
         usersDirectory.appendingPathComponent(user.fileId)
     }
     
@@ -143,7 +143,7 @@ final class Storage: Logger {
     - Parameter user: The public key of the user.
     - Returns: The url of the file containing the topic keys.
     */
-    private func userTopicKeyFolderURL(_ user: Data) -> URL {
+    private func userTopicKeyFolderURL(_ user: UserKey) -> URL {
         userURL(user).appendingPathComponent("topickeys")
     }
     
@@ -152,7 +152,7 @@ final class Storage: Logger {
      - Parameter user: The public key of the user.
      - Returns: The url of the file containing the topic keys.
      */
-    private func userTopicKeyURL(_ user: Data, app: String) -> URL {
+    private func userTopicKeyURL(_ user: UserKey, app: String) -> URL {
         userTopicKeyFolderURL(user).appendingPathComponent(app.base64URLEscaped())
     }
     
@@ -161,7 +161,7 @@ final class Storage: Logger {
     - Parameter user: The public key of the user.
     - Returns: The url of the folder containing the pre keys.
     */
-    private func userPreKeyURL(_ user: Data) -> URL {
+    private func userPreKeyURL(_ user: UserKey) -> URL {
         userURL(user).appendingPathComponent("prekeys")
     }
 
@@ -171,7 +171,7 @@ final class Storage: Logger {
      - Parameter device: The public key of a device.
      - Returns: The url to the prekey file.
      */
-    private func devicePreKeyURL(_ device: Data, of user: Data) -> URL {
+    private func devicePreKeyURL(_ device: DeviceKey, of user: UserKey) -> URL {
         return userPreKeyURL(user).appendingPathComponent(device.fileId)
     }
     
@@ -220,7 +220,7 @@ final class Storage: Logger {
      - `deletionFailed`, if an existing folder could not be deleted
      - `folderCreationFailed`, if the user folder couldn't be created.
      */
-    func create(user: Data) throws {
+    func create(user: UserKey) throws {
         let url = userURL(user)
         // Remove any existing directory or file
         try removeItem(at: url)
@@ -237,7 +237,7 @@ final class Storage: Logger {
      - Parameter user: The user whose data to delete.
      - Throws: `ServerError.deletionFailed`, if the file/folder could not be deleted
      */
-    func deleteData(forUser user: Data) throws {
+    func deleteData(forUser user: UserKey) throws {
         let url = userURL(user)
         try removeItem(at: url)
     }
@@ -249,7 +249,7 @@ final class Storage: Logger {
     - Parameter device: The public key of the device.
     - Throws: `ServerError.deletionFailed`, if the prekeys could not be deleted.
     */
-    func deleteData(forDevice device: Data, of user: Data) throws {
+    func deleteData(forDevice device: DeviceKey, of user: UserKey) throws {
         try self.deletePreKeys(for: device, of: user)
     }
     
@@ -269,7 +269,7 @@ final class Storage: Logger {
      - `ServerError.fileWriteFailed`, if the prekey data could not be written.
      - `ServerError.fileReadFailed`, if the file could not be read.
      */
-    func store(preKeys: [RV_DevicePrekey], for device: Data, of user: Data) throws -> UInt32 {
+    func store(preKeys: [RV_DevicePrekey], for device: DeviceKey, of user: UserKey) throws -> UInt32 {
         let url = devicePreKeyURL(device, of: user)
         guard dataExists(at: url) else {
             // No keys exist, simply write new keys
@@ -314,7 +314,7 @@ final class Storage: Logger {
         - `ServerError.fileWriteFailed`, if the prekey data for a device could not be written.
         - `ServerError.deletionFailed`, if the prekey data for a device could not be deleted.
      */
-    func get(preKeys count: Int, for devices: [Data], of user: Data) throws -> RV_DevicePreKeyBundle {
+    func get(preKeys count: Int, for devices: [DeviceKey], of user: UserKey) throws -> RV_DevicePreKeyBundle {
         
         // Get all keys for each device.
         var preKeys = [Data : [RV_DevicePrekey]]()
@@ -373,7 +373,7 @@ final class Storage: Logger {
     - Parameter device: The public key of the device.
     - Throws: `ServerError.deletionFailed`, if the prekeys could not be deleted.
     */
-    private func deletePreKeys(for device: Data, of user: Data) throws {
+    private func deletePreKeys(for device: DeviceKey, of user: UserKey) throws {
         let url = self.devicePreKeyURL(device, of: user)
         try removeItem(at: url)
     }
@@ -395,7 +395,7 @@ final class Storage: Logger {
         - `ServerError.fileWriteFailed`, if the topic keys data could not be written.
         - `ServerError.fileReadFailed`, if the file could not be read.
      */
-    func store(topicKeys: [RV_TopicKey], for appId: String, of user: Data) throws -> UInt32 {
+    func store(topicKeys: [RV_TopicKey], for appId: String, of user: UserKey) throws -> UInt32 {
         let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No previous keys exist
@@ -423,7 +423,7 @@ final class Storage: Logger {
         - `BinaryDecodingError`, if the data is not a valid protobuf, or if the serialization fails.
         - `BinaryEncodingError`, if the serialization fails.
      */
-    func getTopicKey(for appId: String, of user: Data) throws -> RV_TopicKey {
+    func getTopicKey(for appId: String, of user: UserKey) throws -> RV_TopicKey {
         let url = userTopicKeyURL(user, app: appId)
         guard dataExists(at: url) else {
             // No keys exist

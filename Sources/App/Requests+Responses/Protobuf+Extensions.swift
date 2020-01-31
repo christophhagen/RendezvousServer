@@ -58,3 +58,23 @@ extension RV_InternalUser {
         }
     }
 }
+
+extension RV_ManagementData.KeyValuePair {
+    
+    static func from(_ pair: (key: Data, value: Data)) -> RV_ManagementData.KeyValuePair {
+        return .with {
+            $0.key = pair.key
+            $0.value = pair.value
+        }
+    }
+}
+
+extension RV_ManagementData.DeviceData {
+    
+    static func from(_ pair: (key: Data, value: RV_DeviceDownload)) -> RV_ManagementData.DeviceData {
+        return .with {
+            $0.deviceKey = pair.key
+            $0.data = pair.value
+        }
+    }
+}

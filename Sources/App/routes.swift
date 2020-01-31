@@ -64,8 +64,6 @@ public func routes(_ router: Router) throws {
     
     // MARK: Topic Keys
     
-    #warning("Get topic keys missing a device, and a number of prekeys")
-    
     // Add new topic keys
     router.postCatching("user", "topickeys", call: server.addTopicKeys)
     

@@ -87,9 +87,8 @@ extension Server {
         // Check if authentication is valid
         let user = try authenticateUser(userKey, device: deviceKey, token: authToken)
         
-        #warning("TODO: Exclude prekeys from requesting device")
-        // Get the available device keys and return them
-        let devices: [Data] = user.devices(for: appId)
+        // Get the devices (without the requestor) and available keys
+        let devices: [DeviceKey] = user.devices(for: appId).filter { $0 != deviceKey }
         let keys = try storage.get(preKeys: count, for: devices, of: userKey)
         
         // Update the remaining count

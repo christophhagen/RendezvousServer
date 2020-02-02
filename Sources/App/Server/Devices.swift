@@ -107,7 +107,7 @@ extension Server {
         }
         
         // Check if authentication is valid
-        _ = try authenticateUser(userKey, device: deviceKey, token: authToken)
+        try authenticateUser(userKey, device: deviceKey, token: authToken)
         
         add(notificationToken: notificationToken, for: deviceKey)
     }

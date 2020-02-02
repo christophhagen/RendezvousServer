@@ -39,7 +39,7 @@ extension Server {
      - Parameter request: The received request.
      - Returns: The new admin token.
      */
-    func updateAdminAuthToken(_ request: Request) throws -> Data {
+    func updateAdminAuthToken(_ request: Request) throws -> AuthToken {
         try checkAdminAccess(request)
         adminToken = makeAuthToken()
         log(info: "Admin authentication token changed")

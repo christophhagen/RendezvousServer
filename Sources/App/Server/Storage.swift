@@ -45,7 +45,7 @@ final class Storage: Logger {
     let base: URL
     
     /// The number of chain links to store in a single file
-    static let chainPartCount: UInt32 = 1000
+    static let chainPartCount: Int = 1000
     
     // MARK: Initialization
     
@@ -178,32 +178,44 @@ final class Storage: Logger {
     /**
      Get the url where topic messages are stored.
      */
-    private func topicDataURL(_ topic: Data) -> URL {
+    private func topicDataURL(_ topic: TopicID) -> URL {
         base.appendingPathComponent("files").appendingPathComponent(topic.fileId)
     }
     
     /**
      Get the storage url for a message in a topic.
      */
-    private func topicDataURL(_ topic: Data, message: Data) -> URL {
+    private func topicDataURL(_ topic: TopicID, message: MessageID) -> URL {
         topicDataURL(topic).appendingPathComponent(message.fileId)
     }
     
     /**
     Get the url where topic chains are stored.
     */
-    private func topicURL(_ topic: Data) -> URL {
+    private func topicURL(_ topic: TopicID) -> URL {
         base.appendingPathComponent("topics").appendingPathComponent(topic.fileId)
     }
     
     /**
      Get the storage url for a topic chain.
      */
-    private func topicURL(_ topic: Data, chainIndex: UInt32) -> URL {
-        // Rounds the parts to multiples of the chain part count
-        let chain = (chainIndex / Storage.chainPartCount) * Storage.chainPartCount
+    private func topicURL(_ topic: TopicID, chainIndex: UInt32) -> URL {
+        let chain = chainNumber(for: Int(chainIndex))
+        return topicURL(topic, chain: chain)
+    }
+    
+    private func topicURL(_ topic: TopicID, chain: Int) -> URL {
         let file = String(format: "%10d", chain)
         return topicURL(topic).appendingPathComponent(file)
+    }
+    
+    private func chainNumber(for index: Int) -> Int {
+        // Rounds the parts to multiples of the chain part count
+        (index / Storage.chainPartCount) * Storage.chainPartCount
+    }
+    
+    private func indexInChainPart(for index: Int) -> Int {
+        index - (chainNumber(for: index) * Storage.chainPartCount)
     }
  
     /// The url for the management data, which contains users, devices and tokens.
@@ -482,7 +494,7 @@ final class Storage: Logger {
         - `RendezvousError.resourceAlreadyExists`, if the topic already exists
         - `ServerError.folderCreationFailed`, if the folder couldn’t be created.
      */
-    func create(topic: Data) throws {
+    func create(topic: TopicID) throws {
         let dataURL = topicDataURL(topic)
         let url = topicURL(topic)
         guard !dataExists(at: url), !dataExists(at: dataURL) else {
@@ -497,7 +509,7 @@ final class Storage: Logger {
      - Parameter topic: The topic id.
      - Returns: `true`, if the topic exists.
      */
-    func exists(topic: Data) -> Bool {
+    func exists(topic: TopicID) -> Bool {
         return dataExists(at: topicURL(topic))
     }
     
@@ -549,6 +561,7 @@ final class Storage: Logger {
      - Parameter topic: The topic id
      - Parameter chainIndex: The current message index of the chain
      - Parameter output: The previous output of the chain
+     - Returns: The new output of the chain.
      
      - Throws: `ServerError `, `BinaryDecodingError`, `BinaryEncodingError`, `CryptoError`
      
@@ -558,7 +571,7 @@ final class Storage: Logger {
         - `CryptoError`, if the hash for the next output could not be calculated
         - `BinaryEncodingError` if protobuf encoding fails.
      */
-    func store(message: RV_TopicMessage, in topic: Data, with chainIndex: UInt32, and output: Data) throws -> Data {
+    func store(message: RV_TopicMessage, in topic: TopicID, with chainIndex: UInt32, and output: Data) throws -> Data {
         let url = topicURL(topic, chainIndex: chainIndex)
         var chain = try getMessageChain(at: url)
         
@@ -568,6 +581,36 @@ final class Storage: Logger {
         let data = try chain.serializedData()
         try write(data: data, to: url)
         return newOutput
+    }
+
+    /**
+     Provide all available messages
+     
+     - Parameter start: The index of the first message to get.
+     - Parameter count: The total number of messages to get.
+     - Parameter topic: The id of the topic.
+     - Returns: The messages in the topic.
+     
+     - Warning: This function assumes that `start + count`  is not larger than the message count for the topic.
+     */
+    func getMessages(from start: Int, count: Int, for topic: TopicID) throws -> RV_MessageChain {
+        // Calculate all chain parts needed to get the messages
+        let startChain = self.chainNumber(for: start)
+        let endChain = self.chainNumber(for: start + count)
+        
+        // For each chain part, join all messages together
+        let all: [RV_TopicMessage] = try (startChain...endChain).reduce(into: []) { result, chainPart in
+            let url = self.topicURL(topic, chain: chainPart)
+            let messages = try getMessageChain(at: url)
+            result.append(contentsOf: messages.messages)
+        }
+        
+        // Select the appropriate messages
+        let startIndex = self.indexInChainPart(for: start)
+        let end = startIndex + count
+        return .with {
+            $0.messages = Array(all[startIndex..<end])
+        }
     }
     
     // MARK: Files
@@ -585,7 +628,7 @@ final class Storage: Logger {
         - `ServerError.fileWriteFailed`, if the data could not be written.
         - `RendezvousError.resourceAlreadyExists`, if the message already exists
      */
-    func store(file: Data, with id: Data, in topic: Data) throws {
+    func store(file: Data, with id: MessageID, in topic: TopicID) throws {
         let url = topicDataURL(topic, message: id)
         guard !dataExists(at: url) else {
             throw RendezvousError.resourceAlreadyExists
@@ -596,7 +639,7 @@ final class Storage: Logger {
     /**
      Get a file in a topic.
      
-     - Parameter file: The file id
+     - Parameter id: The file id
      - Parameter topic: The topic id
      
      - Throws: `ServerError`, `RendezvousError`
@@ -605,8 +648,8 @@ final class Storage: Logger {
         - `ServerError.fileReadFailed`, if the file could not be read.
         - `RendezvousError.resourceNotAvailable`, if the message doesn't exist
      */
-    func get(file: Data, in topic: Data) throws -> Data {
-        let url = topicDataURL(topic, message: file)
+    func getFile(_ id: MessageID, in topic: TopicID) throws -> Data {
+        let url = topicDataURL(topic, message: id)
         guard dataExists(at: url) else {
             throw RendezvousError.resourceNotAvailable
         }

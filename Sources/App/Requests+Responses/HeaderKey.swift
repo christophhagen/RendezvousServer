@@ -30,6 +30,9 @@ enum HeaderKey: String {
     /// The number of keys or other items
     case count = "count"
     
+    /// The start of a message range request.
+    case start = "start"
+    
     /// The public key of a requested user
     case receiver = "receiver"
     

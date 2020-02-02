@@ -35,7 +35,7 @@ extension Request {
      - Note: Possible Errors:
         - `invalidRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
      */
-    func authToken() throws -> Data {
+    func authToken() throws -> AuthToken {
         try binary(header: .authToken, length: Server.authTokenLength)
     }
     
@@ -53,11 +53,11 @@ extension Request {
     
     /**
     Get the pin from the request.
-    - Returns: The pin.
-    - Throws: `RendezvousError` errors
-    - Note: Possible Errors:
-    - `invalidRequest`, if the request doesn't contain a pin, or if the pin is not a valid number.
-    */
+     - Returns: The pin.
+     - Throws: `RendezvousError` errors
+     - Note: Possible Errors:
+        - `invalidRequest`, if the request doesn't contain a pin, or if the pin is not a valid number.
+     */
     func pin() throws -> UInt32 {
         let value = try get(header: .pin)
         guard let pin = UInt32(value), pin < Server.pinMaximum else {
@@ -67,18 +67,25 @@ extension Request {
     }
     
     /**
-    Get the count from the request.
-    - Returns: The count.
-    - Throws: `RendezvousError` errors
-    - Note: Possible Errors:
-    - `invalidRequest`, if the request doesn't contain a count, or if the count is not a valid number.
+     Get the count from the request.
+     - Returns: The count.
+     - Throws: `RendezvousError` errors
+     - Note: Possible Errors:
+        - `invalidRequest`, if the request doesn't contain a count, or if the count is not a valid number.
     */
     func count() throws -> Int {
-        let value = try get(header: .count)
-        guard let count = Int(value) else {
-            throw RendezvousError.invalidRequest
-        }
-        return count
+        try int(header: .count)
+    }
+    
+    /**
+     Get the range start from the request.
+     - Returns: The range start (inclusive).
+     - Throws: `RendezvousError` errors
+     - Note: Possible Errors:
+        - `invalidRequest`, if the request doesn't contain a start value, or if it is not a valid number.
+     */
+    func start() throws -> Int {
+        try int(header: .start)
     }
     
     /**
@@ -86,7 +93,7 @@ extension Request {
      - Returns: The public key in binary format.
      - Throws: `RendezvousError` errors
      - Note: Possible Errors:
-     - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
+        - `invalidRequest`, if the request doesn't contain a key, or if the key has invalid length.
      */
     func devicePublicKey() throws -> DeviceKey {
         return try key(header: .device)
@@ -139,7 +146,7 @@ extension Request {
      - Note: Possible Errors:
         - `invalidRequest`, if the request doesn't contain a topic id, or if the id is invalid.
      */
-    func topicId() throws -> Data {
+    func topicId() throws -> TopicID {
         try binaryFromPathComponent(length: Server.topicIdLength)
     }
     
@@ -151,7 +158,7 @@ extension Request {
      - Note: Possible Errors:
         - `invalidRequest`, if the request doesn't contain a file id, or if the id is invalid.
      */
-    func fileId() throws -> Data {
+    func messageId() throws -> MessageID {
         try binaryFromPathComponent(length: Server.messageIdLength)
     }
     
@@ -229,5 +236,13 @@ extension Request {
     
     private func key(header: HeaderKey) throws -> Data {
         try binary(header: header, length: Curve25519.keyLength)
+    }
+    
+    private func int(header: HeaderKey) throws -> Int {
+        let value = try get(header: header)
+        guard let count = Int(value), count >= 0 else {
+            throw RendezvousError.invalidRequest
+        }
+        return count
     }
 }

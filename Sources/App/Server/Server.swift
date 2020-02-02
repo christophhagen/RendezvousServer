@@ -9,11 +9,23 @@ import Foundation
 import Vapor
 import CryptoKit25519
 
+/// - Note: Whenever one of the typealiases below is used in the code,
+/// then the data is assumed to be of correct form.
+
 /// The public identity key of a device
 typealias DeviceKey = Data
 
 /// The public identity key of a user
 typealias UserKey = Data
+
+/// The id of a topic
+typealias TopicID = Data
+
+/// The id of a message
+typealias MessageID = Data
+
+/// An authentication token
+typealias AuthToken = Data
 
 /**
  The `Server` class handles all request related to user and device management, as well as adminstrative tasks.
@@ -61,7 +73,7 @@ final class Server: Logger {
     private var internalUsers = [UserKey : RV_InternalUser]()
     
     /// The authentication tokens for all internal devices.
-    private var authTokens: [DeviceKey : Data]
+    private var authTokens: [DeviceKey : AuthToken]
     
     /// The tokens to authenticate the messages to the notification servers
     private var notificationTokens: [DeviceKey : Data]
@@ -73,7 +85,7 @@ final class Server: Logger {
     private var oldDeviceData: [DeviceKey : RV_DeviceDownload]
     
     /// The info about all topics currently available on the server
-    private var topics: [Data : RV_TopicState]
+    private var topics: [TopicID : RV_TopicState]
     
     /// The users which are allowed to register on the server, with their pins, the remaining tries, and the time until which they can register.
     private var usersAllowedToRegister: [String : RV_AllowedUser]
@@ -217,7 +229,8 @@ final class Server: Logger {
      - Returns: The information about the user.
      - Throws: `RendezvousError.authenticationFailed`, if the user or device doesn't exist, or the token is invalid
      */
-    func authenticateUser(_ user: UserKey, device: DeviceKey, token: Data) throws -> RV_InternalUser {
+    @discardableResult
+    func authenticateUser(_ user: UserKey, device: DeviceKey, token: AuthToken) throws -> RV_InternalUser {
         // Check if authentication is valid
         guard let user = internalUsers[user],
             user.devices.contains(where: {$0.deviceKey == device}),
@@ -227,24 +240,7 @@ final class Server: Logger {
         }
         return user
     }
-    
-    /**
-     Check the authentication of a user.
-     
-     - Parameter request: The received request, containing user key,device key and auth token in the headers
-     - Returns: The user key
-     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
-     */
-    func authenticateUser(_ request: Request) throws -> UserKey {
-        let userKey = try request.userPublicKey()
-        let deviceKey = try request.devicePublicKey()
-        let authToken = try request.authToken()
-        
-        // Check if authentication is valid
-        _ = try authenticateUser(userKey, device: deviceKey, token: authToken)
-        return userKey
-    }
-    
+
     /**
     Check the authentication of a device.
     
@@ -252,30 +248,14 @@ final class Server: Logger {
     - Parameter token: The received authentication token
     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
     */
-    func authenticateDevice(_ device: DeviceKey, token: Data) throws {
+    func authenticateDevice(_ device: DeviceKey, token: AuthToken) throws {
         // Check if authentication is valid
         guard let deviceToken = authTokens[device],
             constantTimeCompare(deviceToken, token) else {
                 throw RendezvousError.authenticationFailed
         }
     }
-    
-    /**
-     Check the authentication of a device.
-     
-     - Parameter request: The received request, containing device key and auth token in the headers
-     - Returns: The device key
-     - Throws: `RendezvousError.authenticationFailed`, if the device doesn't exist, or the token is invalid
-     */
-    func authenticateDevice(_ request: Request) throws -> DeviceKey {
-        let deviceKey = try request.devicePublicKey()
-        let authToken = try request.authToken()
-        
-        // Check if authentication is valid
-        try authenticateDevice(deviceKey, token: authToken)
-        return deviceKey
-    }
-    
+
     // MARK: Internal state
     
     /**
@@ -355,7 +335,7 @@ final class Server: Logger {
         }
     }
     
-    func update(chain: RV_TopicState.ChainState, for topic: Data) {
+    func update(chain: RV_TopicState.ChainState, for topic: TopicID) {
         topics[topic]?.chain = chain
     }
     
@@ -377,6 +357,32 @@ final class Server: Logger {
         deviceData[device]!.topicKeyMessages.append(contentsOf: messages)
     }
     
+    func add(deliveryReceipts receipts: [MessageID], from sender: UserKey, to device: DeviceKey) {
+        guard let index = deviceData[device]!.receipts.firstIndex(where: { $0.sender == sender }) else {
+            let receipt = RV_DeviceDownload.Receipt.with {
+                $0.sender = sender
+                $0.ids = receipts
+            }
+            deviceData[device]!.receipts.append(receipt)
+            return
+        }
+        deviceData[device]!.receipts[index].ids.append(contentsOf: receipts)
+    }
+    
+    func send(deliveryReceipts receipts: [MessageID], to user: UserKey, from sender: UserKey, in app: String) {
+        guard let devices = self.userDevices(user, app: app) else {
+            return
+        }
+        #warning("Prevent multiple receipts from devices of the same user")
+        for device in devices.filter({ $0.isActive }) {
+            // Add the receipts to device bundle
+            add(deliveryReceipts: receipts, from: sender, to: device.deviceKey)
+            // Send the notification
+            push(receipts: receipts, from: sender, to: device.deviceKey, of: user)
+        }
+        
+    }
+    
     func set(remainingTopicKeys count: UInt32, for device: DeviceKey) {
         deviceData[device]!.remainingTopicKeys = count
     }
@@ -385,7 +391,7 @@ final class Server: Logger {
         deviceData[device]!.remainingPreKeys = count
     }
     
-    func set(authToken: Data, for device: DeviceKey) {
+    func set(authToken: AuthToken, for device: DeviceKey) {
         authTokens[device] = authToken
     }
     

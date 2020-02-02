@@ -44,7 +44,7 @@ extension Server {
         let topic = try RV_Topic(validRequest: data)
         
         // Check if authentication is valid
-        _ = try authenticateUser(userKey, device: deviceKey, token: authToken)
+        try authenticateUser(userKey, device: deviceKey, token: authToken)
         
         // Check that the topic fulfills basic criteria
         guard topic.indexOfMessageCreator < topic.members.count,

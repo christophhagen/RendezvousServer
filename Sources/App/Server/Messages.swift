@@ -36,7 +36,6 @@ extension Server {
         - `ServerError.fileWriteFailed`, if the message data could not be written.
         - `ServerError.fileReadFailed`, if the file could not be read.
         - `CryptoError`, if the hash for the next output could not be calculated
-       
      */
     func addMessage(_ request: Request) throws -> Data {
         let data = try request.body()
@@ -61,10 +60,12 @@ extension Server {
             throw RendezvousError.invalidRequest
         }
         let member = topic.info.members[index]
+        
         // Check that the member is authorized to post
         guard member.role == .admin || member.role == .participant else {
             throw RendezvousError.authenticationFailed
         }
+        
         // Check that the signature is valid
         guard let signatureKey = try? member.signatureKey.toPublicKey() else {
             throw RendezvousError.invalidRequest
@@ -111,10 +112,69 @@ extension Server {
     }
     
     func getMessages(_ request: Request) throws -> Data {
-        // Check if authentication is valid
-        let deviceKey = try authenticateDevice(request)
+        let userKey = try request.userPublicKey()
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
         
+        // Check if authentication is valid and get application
+        let app = try authenticateUser(userKey, device: deviceKey, token: authToken)
+            .devices.first(where: { $0.deviceKey == deviceKey })!.application
+        
+        // Get the data for the device
         let data = getAndClearDeviceData(deviceKey)
+        
+        // Create delivery receipts for each user
+        var delivered = [UserKey : [MessageID]]()
+        for message in data.messages {
+            guard let members = self.topic(id: message.topicID)?.info.members.map({ $0.info.userKey }) else {
+                // Topic doesn't exist (anymore?)
+                continue
+            }
+            let messageId = message.content.id
+            // Add the message to the dictionary for each user
+            for member in members {
+                delivered[member, default: []].append(messageId)
+            }
+        }
+        
+        // Send delivery receipts
+        for (receiver, receipts) in delivered {
+            // Note: This will send a notification also to the device who retrieves the bundle
+            send(deliveryReceipts: receipts, to: receiver, from: userKey, in: app)
+        }
+        
+        // Return the device data
+        return try data.serializedData()
+    }
+    
+    /**
+     Get topic messages in a specified range.
+     - Parameter request: The received GET request.
+     */
+    func getMessagesInRange(_ request: Request) throws -> Data {
+        let userKey = try request.userPublicKey()
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
+        let topicId = try request.topicId()
+        let start = try request.start()
+        let count = try request.count()
+        
+        // Check if authentication is valid
+        try authenticateUser(userKey, device: deviceKey, token: authToken)
+        
+        // Check if the topic exists
+        guard let topic = self.topic(id: topicId) else {
+            throw RendezvousError.resourceNotAvailable
+        }
+        
+        // Limit the requested range to reasonable values
+        let messageCount = Int(topic.chain.nextChainIndex)
+        guard start < messageCount, count > 0 else {
+            return Data()
+        }
+        let newCount = min(count, messageCount - start)
+        
+        let data = try storage.getMessages(from: start, count: newCount, for: topicId)
         return try data.serializedData()
     }
     
@@ -130,20 +190,24 @@ extension Server {
         - `RendezvousError.resourceNotAvailable`, if the file doesn’t exist
      */
     func getFile(_ request: Request) throws -> Data {
+        let userKey = try request.userPublicKey()
+        let deviceKey = try request.devicePublicKey()
+        let authToken = try request.authToken()
+        
         // Check if authentication is valid
-        let user = try authenticateUser(request)
+        try authenticateUser(userKey, device: deviceKey, token: authToken)
         
         // Get the ids from the path
         let topicId = try request.topicId()
-        let file = try request.fileId()
+        let file = try request.messageId()
         
         // Check that the user has permissions for the topic
         guard let topic = self.topic(id: topicId),
-            topic.info.members.contains(where: { $0.info.userKey == user }) else {
+            topic.info.members.contains(where: { $0.info.userKey == userKey }) else {
                 throw RendezvousError.authenticationFailed
         }
         
         // Return the file data
-        return try storage.get(file: file, in: topicId)
+        return try storage.getFile(file, in: topicId)
     }
 }

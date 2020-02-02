@@ -184,6 +184,12 @@ struct RV_DeviceDownload {
     set {_uniqueStorage()._remainingPreKeys = newValue}
   }
 
+  /// The delivery receipts from other users
+  var receipts: [RV_DeviceDownload.Receipt] {
+    get {return _storage._receipts}
+    set {_uniqueStorage()._receipts = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   /// A new message in a topic
@@ -223,6 +229,23 @@ struct RV_DeviceDownload {
     init() {}
 
     fileprivate var _storage = _StorageClass.defaultInstance
+  }
+
+  /// A list of delivery receipts
+  struct Receipt {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The user sending the receipts
+    var sender: Data = SwiftProtobuf.Internal.emptyData
+
+    /// The message ids of the delivered messages
+    var ids: [Data] = []
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    init() {}
   }
 
   init() {}
@@ -1357,6 +1380,7 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     4: .same(proto: "messages"),
     5: .same(proto: "remainingTopicKeys"),
     6: .same(proto: "remainingPreKeys"),
+    7: .same(proto: "receipts"),
   ]
 
   fileprivate class _StorageClass {
@@ -1366,6 +1390,7 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
     var _messages: [RV_DeviceDownload.Message] = []
     var _remainingTopicKeys: UInt32 = 0
     var _remainingPreKeys: UInt32 = 0
+    var _receipts: [RV_DeviceDownload.Receipt] = []
 
     static let defaultInstance = _StorageClass()
 
@@ -1378,6 +1403,7 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
       _messages = source._messages
       _remainingTopicKeys = source._remainingTopicKeys
       _remainingPreKeys = source._remainingPreKeys
+      _receipts = source._receipts
     }
   }
 
@@ -1399,6 +1425,7 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
         case 4: try decoder.decodeRepeatedMessageField(value: &_storage._messages)
         case 5: try decoder.decodeSingularUInt32Field(value: &_storage._remainingTopicKeys)
         case 6: try decoder.decodeSingularUInt32Field(value: &_storage._remainingPreKeys)
+        case 7: try decoder.decodeRepeatedMessageField(value: &_storage._receipts)
         default: break
         }
       }
@@ -1425,6 +1452,9 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
       if _storage._remainingPreKeys != 0 {
         try visitor.visitSingularUInt32Field(value: _storage._remainingPreKeys, fieldNumber: 6)
       }
+      if !_storage._receipts.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._receipts, fieldNumber: 7)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1440,6 +1470,7 @@ extension RV_DeviceDownload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplem
         if _storage._messages != rhs_storage._messages {return false}
         if _storage._remainingTopicKeys != rhs_storage._remainingTopicKeys {return false}
         if _storage._remainingPreKeys != rhs_storage._remainingPreKeys {return false}
+        if _storage._receipts != rhs_storage._receipts {return false}
         return true
       }
       if !storagesAreEqual {return false}
@@ -1521,6 +1552,41 @@ extension RV_DeviceDownload.Message: SwiftProtobuf.Message, SwiftProtobuf._Messa
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension RV_DeviceDownload.Receipt: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = RV_DeviceDownload.protoMessageName + ".Receipt"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "sender"),
+    2: .same(proto: "ids"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularBytesField(value: &self.sender)
+      case 2: try decoder.decodeRepeatedBytesField(value: &self.ids)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.sender.isEmpty {
+      try visitor.visitSingularBytesField(value: self.sender, fieldNumber: 1)
+    }
+    if !self.ids.isEmpty {
+      try visitor.visitRepeatedBytesField(value: self.ids, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: RV_DeviceDownload.Receipt, rhs: RV_DeviceDownload.Receipt) -> Bool {
+    if lhs.sender != rhs.sender {return false}
+    if lhs.ids != rhs.ids {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

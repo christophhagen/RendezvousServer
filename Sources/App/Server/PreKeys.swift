@@ -33,7 +33,7 @@ extension Server {
         let preKeyRequest = try RV_DevicePrekeyUploadRequest(validRequest: data)
         
         // Check if authentication is valid
-        _ = try authenticateUser(preKeyRequest.publicKey,
+        try authenticateUser(preKeyRequest.publicKey,
                                  device: preKeyRequest.deviceKey,
                                  token: preKeyRequest.authToken)
         

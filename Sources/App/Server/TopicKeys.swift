@@ -122,7 +122,7 @@ extension Server {
         let request = try RV_TopicKeyRequest(validRequest: body)
         
         // Check if authentication is valid
-        _ = try authenticateUser(request.publicKey, device: request.deviceKey, token: request.authToken)
+        try authenticateUser(request.publicKey, device: request.deviceKey, token: request.authToken)
         
         let keys = request.users.compactMap { userKey -> RV_TopicKeyResponse.User? in
             // Check if user exists

@@ -7,8 +7,6 @@ import SwiftProtobuf
 /// [Learn More →](https://docs.vapor.codes/3.0/getting-started/structure/#routesswift)
 public func routes(_ router: Router) throws {
     
-    #warning("Add delivery receipts for all messages to devices")
-    
     // MARK: Info
     
     router.get("ping") { _ in
@@ -98,11 +96,15 @@ public func routes(_ router: Router) throws {
     
     #warning("Get topic messages in a specified range")
     
+    router.getCatching("topic", "range", call: server.getMessagesInRange)
+    
     // Download new messages for a device
     router.getCatching("device", "messages", call: server.getMessages)
     
+    // Enable static file serving if specified in the configuration file
     if server.shouldServeStaticFiles {
         
+        // Serve messages in topics
         router.getCatching("files", String.parameter, String.parameter, call: server.getFile)
     }
       

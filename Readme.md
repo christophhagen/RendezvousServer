@@ -2,6 +2,10 @@
 
 Rendezvous is a system aimed at providing end-to-end encrypted communication and data sharing, which can be federated between many servers. Users can register with a server of their choice, or create their own. Servers don't have access to the data exchanged between clients, which is organized in `Topics`. Multi-device support and optional push notifications allow modern messaging.
 
+# Disclaimer
+
+THIS IS A PRIVATE PROJECT STILL VERY MUCH UNDER DEVELOPMENT. MAYBE DON'T USE THIS YET.
+
 ## Aims
 
 ### Functions

@@ -48,7 +48,7 @@ extension Server {
         
         // Check that the topic fulfills basic criteria
         guard topic.indexOfMessageCreator < topic.members.count,
-            topic.topicID.count == Server.topicIdLength else {
+            topic.topicID.count == Constants.topicIdLength else {
                 throw RendezvousError.invalidRequest
         }
         let admin = topic.members[Int(topic.indexOfMessageCreator)]

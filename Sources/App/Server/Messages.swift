@@ -42,8 +42,8 @@ extension Server {
         let upload = try RV_TopicMessageUpload(validRequest: data)
         
         // Check the length of relevant fields
-        guard upload.message.metadata.count < Server.maximumMetadataLength,
-            upload.message.id.count == Server.messageIdLength else {
+        guard upload.message.metadata.count < Constants.maximumMetadataLength,
+            upload.message.id.count == Constants.messageIdLength else {
                 throw RendezvousError.invalidRequest
         }
         

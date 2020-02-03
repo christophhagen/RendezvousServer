@@ -85,9 +85,9 @@ extension Server {
         // Create the user with a random pin and the expiry date
         let user = RV_AllowedUser.with {
             $0.name = name
-            $0.pin =  UInt32.random(in: 0..<Server.pinMaximum)
-            $0.expiry = timeInSeconds() + Server.pinExpiryInterval
-            $0.numberOfTries = Server.pinAllowedTries
+            $0.pin =  UInt32.random(in: 0..<Constants.pinMaximum)
+            $0.expiry = timeInSeconds() + Constants.pinExpiryInterval
+            $0.numberOfTries = Constants.pinAllowedTries
         }
         
         // Store the user

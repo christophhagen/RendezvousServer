@@ -102,7 +102,7 @@ extension Server {
         let authToken = try request.authToken()
         let notificationToken = try request.body()
         
-        guard notificationToken.count == Server.authTokenLength else {
+        guard notificationToken.count == Constants.authTokenLength else {
             throw RendezvousError.invalidRequest
         }
         

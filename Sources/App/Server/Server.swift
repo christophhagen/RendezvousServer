@@ -34,32 +34,7 @@ final class Server: Logger {
     
     // MARK: Constants
     
-    /// The time interval after which pins expire (in seconds)
-    static let pinExpiryInterval: UInt32 = 60 * 60 * 32 * 7
     
-    /// The number of times a pin can be wrong before blocking the registration
-    static let pinAllowedTries: UInt32 = 3
-    
-    /// The maximum value for the pin
-    static let pinMaximum: UInt32 = 100000
-    
-    /// The maximum allowed characters for user names
-    static let maximumNameLength = 32
-    
-    /// The number of bytes for an authentication token
-    static let authTokenLength = 16
-    
-    /// The length of a topic id
-    static let topicIdLength = 12
-    
-    /// The length of a message id
-    static let messageIdLength = 12
-    
-    /// The maximum length of an app id
-    static let maximumAppIdLength = 10
-    
-    /// The maximum length of message metadata
-    static let maximumMetadataLength = 100
     
     // MARK: Private variables
     
@@ -132,7 +107,7 @@ final class Server: Logger {
      - Note: The admin authentication token will be set to all zeros.
      */
     private init(storage: Storage, development: Bool, serveStaticFiles: Bool, notificationServer: URL) {
-        self.adminToken = Data(repeating: 0, count: Server.authTokenLength)
+        self.adminToken = Data(repeating: 0, count: Constants.authTokenLength)
         self.usersAllowedToRegister = [:]
         self.internalUsers = [:]
         self.authTokens = [:]
@@ -212,7 +187,7 @@ final class Server: Logger {
     func reset() throws {
         log(warning: "Deleting all server data")
         try storage.deleteAllData()
-        self.adminToken = Data(repeating: 0, count: Server.authTokenLength)
+        self.adminToken = Data(repeating: 0, count: Constants.authTokenLength)
         self.usersAllowedToRegister = [:]
         self.internalUsers = [:]
         self.authTokens = [:]
@@ -473,7 +448,7 @@ final class Server: Logger {
      - Returns: The binary token.
      */
     func makeAuthToken() -> Data {
-        return randomBytes(count: Server.authTokenLength)
+        return randomBytes(count: Constants.authTokenLength)
     }
 
 }

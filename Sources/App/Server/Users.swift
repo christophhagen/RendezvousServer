@@ -51,7 +51,7 @@ extension Server {
         
         // Check that app id is valid.
         let device = bundle.info.devices[0]
-        guard device.application.count <= Server.maximumAppIdLength else {
+        guard device.application.count <= Constants.maximumAppIdLength else {
             throw RendezvousError.invalidRequest
         }
         

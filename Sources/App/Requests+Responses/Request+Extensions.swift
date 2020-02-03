@@ -36,7 +36,7 @@ extension Request {
         - `invalidRequest`, if the request doesn't contain a token, if the token is not base64 encoded data, or if the length of the token is invalid.
      */
     func authToken() throws -> AuthToken {
-        try binary(header: .authToken, length: Server.authTokenLength)
+        try binary(header: .authToken, length: Constants.authTokenLength)
     }
     
     /**
@@ -48,7 +48,7 @@ extension Request {
      - `invalidRequest`, if the request doesn't contain a user name, or if the name is longer than `Server.maximumNameLength` characters.
      */
     func user() throws -> String {
-        try get(header: .username, maxLength: Server.maximumNameLength)
+        try get(header: .username, maxLength: Constants.maximumNameLength)
     }
     
     /**
@@ -60,7 +60,7 @@ extension Request {
      */
     func pin() throws -> UInt32 {
         let value = try get(header: .pin)
-        guard let pin = UInt32(value), pin < Server.pinMaximum else {
+        guard let pin = UInt32(value), pin < Constants.pinMaximum else {
             throw RendezvousError.invalidRequest
         }
         return pin
@@ -135,7 +135,7 @@ extension Request {
         - `invalidRequest`, if the request doesn't contain an app id, or if the id larger than `Server.maximumAppIdLength` characters.
      */
     func appId() throws -> String {
-        try get(header: .appId, maxLength: Server.maximumAppIdLength)
+        try get(header: .appId, maxLength: Constants.maximumAppIdLength)
     }
     
     /**
@@ -147,7 +147,7 @@ extension Request {
         - `invalidRequest`, if the request doesn't contain a topic id, or if the id is invalid.
      */
     func topicId() throws -> TopicID {
-        try binaryFromPathComponent(length: Server.topicIdLength)
+        try binaryFromPathComponent(length: Constants.topicIdLength)
     }
     
     /**
@@ -159,7 +159,7 @@ extension Request {
         - `invalidRequest`, if the request doesn't contain a file id, or if the id is invalid.
      */
     func messageId() throws -> MessageID {
-        try binaryFromPathComponent(length: Server.messageIdLength)
+        try binaryFromPathComponent(length: Constants.messageIdLength)
     }
     
     /**
@@ -225,7 +225,8 @@ extension Request {
      */
     private func binaryFromPathComponent(length: Int) throws -> Data {
         let value = try parameters.next(String.self)
-        guard let binary = Data(base32Encoded: value) else {
+        
+        guard let binary = Data(base64URLEncoded: value) else {
             throw RendezvousError.invalidRequest
         }
         guard binary.count == length else {

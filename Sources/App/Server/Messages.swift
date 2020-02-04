@@ -72,13 +72,21 @@ extension Server {
         }
         try upload.message.verifySignature(with: signatureKey)
         
-        // Calculate the hash of the file and compare it to the message value
-        guard try SHA256.hash(upload.file) == upload.message.hash else {
-            throw RendezvousError.invalidRequest
+        // If a file exists, check it
+        if upload.file.count != 0 {
+            // Calculate the hash of the file and compare it to the message value
+            guard try SHA256.hash(upload.file) == upload.message.hash else {
+                throw RendezvousError.invalidRequest
+            }
+            
+            // Store the file
+            try storage.store(file: upload.file, with: upload.message.id, in: upload.topicID)
+        } else {
+            // Check that the hash is also empty.
+            guard upload.message.hash.count == 0 else {
+                throw RendezvousError.invalidRequest
+            }
         }
-        
-        // Store the file and the message
-        try storage.store(file: upload.file, with: upload.message.id, in: upload.topicID)
         
         // Store the message
         let output = try storage.store(message: upload.message, in: upload.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)

@@ -26,7 +26,7 @@ extension SwiftProtobuf.Message {
 
 extension RV_InternalUser: TimestampedProtobuf { }
 
-extension RV_TopicMessage: SignedProtobuf { }
+extension RV_TopicUpdate: SignedProtobuf { }
 
 extension RV_Topic: TimestampedProtobuf {
     

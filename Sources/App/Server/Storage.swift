@@ -571,7 +571,7 @@ final class Storage: Logger {
         - `CryptoError`, if the hash for the next output could not be calculated
         - `BinaryEncodingError` if protobuf encoding fails.
      */
-    func store(message: RV_TopicMessage, in topic: TopicID, with chainIndex: UInt32, and output: Data) throws -> Data {
+    func store(message: RV_TopicUpdate, in topic: TopicID, with chainIndex: UInt32, and output: Data) throws -> Data {
         let url = topicURL(topic, chainIndex: chainIndex)
         var chain = try getMessageChain(at: url)
         
@@ -599,7 +599,7 @@ final class Storage: Logger {
         let endChain = self.chainNumber(for: start + count)
         
         // For each chain part, join all messages together
-        let all: [RV_TopicMessage] = try (startChain...endChain).reduce(into: []) { result, chainPart in
+        let all: [RV_TopicUpdate] = try (startChain...endChain).reduce(into: []) { result, chainPart in
             let url = self.topicURL(topic, chain: chainPart)
             let messages = try getMessageChain(at: url)
             result.append(contentsOf: messages.messages)

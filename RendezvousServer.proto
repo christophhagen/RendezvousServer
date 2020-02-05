@@ -116,7 +116,7 @@ message DeviceDownload {
         TopicState.ChainState chain = 2;
         
         // The actual message
-        TopicMessage content = 3;
+        TopicUpdate content = 3;
     }
     
     // A list of delivery receipts
@@ -125,8 +125,18 @@ message DeviceDownload {
         // The user sending the receipts
         bytes sender = 1;
         
-        // The message ids of the delivered messages
-        repeated bytes ids = 2;
+        // The current chain state in the topics
+        repeated TopicReceipt receipts = 2;
+        
+        // A receipt of a user within a topic
+        message TopicReceipt {
+            
+            // The topic id
+            bytes id = 1;
+            
+            // The next chain index for the user
+            uint32 index = 2;
+        }
     }
 }
 
@@ -356,7 +366,7 @@ message Topic {
 message MessageChain {
     
     // All messages in the chain
-    repeated TopicMessage messages = 1;
+    repeated TopicUpdate messages = 1;
     
     // The result of iteratively hashing the message signatures: h_n = h(h_n-1 | h(s_n)); h_0 = id
     bytes output = 2;
@@ -385,7 +395,7 @@ message TopicState {
 // MARK: - Topic messages
 
 // A request to upload a message
-message TopicMessageUpload {
+message TopicUpdateUpload {
     
     // The public key of the device
     bytes deviceKey = 1;
@@ -397,32 +407,49 @@ message TopicMessageUpload {
     bytes topicId = 3;
     
     // The message to add
-    TopicMessage message = 4;
+    TopicUpdate update = 4;
     
-    // The data of the file to write to disk
-    bytes file = 5;
+    // The files to upload
+    repeated FileData files = 5;
+    
+    // The data of a file
+    message FileData {
+        
+        // The file id
+        bytes id = 1;
+        
+        // The file data
+        bytes data = 2;
+    }
 }
 
 // A message posted to a topic
-message TopicMessage {
+message TopicUpdate {
     
     // The sender's index in the list of topic members
     uint32 indexInMemberList = 1;
     
-    // The id of the file added to the topic
-    bytes id = 2;
-    
-    // The hash of the encrypted file
-    bytes hash = 3;
-    
-    // The authentication tag of the file
-    bytes tag = 4;
+    // The files included in the message
+    repeated File files = 3;
     
     // Metadata encrypted with the message key.
     bytes metadata = 5;
     
-    // The signature of the whole message with the signature key
+    // The signature of the whole message (without file data) with the signature key
     bytes signature = 6;
+    
+    // An optional file associated with the message
+    message File {
+        
+        // The id of the message
+        bytes id = 1;
+        
+        // The hash of the encrypted file
+        bytes hash = 2;
+    
+        // The authentication tag of the file
+        bytes tag = 3;
+    }
 }
 
 // MARK: Server data
@@ -564,23 +591,11 @@ message ClientData {
             // The public key of the sender
             bytes senderPublicKey = 1;
             
-            // The id of the file added to the topic
-            bytes id = 2;
-            
-            // The hash of the encrypted file
-            bytes hash = 3;
-            
-            // The authentication tag of the file
-            bytes tag = 4;
-            
-            // The metadata of the file.
-            bytes metadata = 5;
-            
-            // The signature of the message
-            bytes signature = 6;
+            // The message
+            TopicUpdate message = 2;
             
             // The state of the chain after the message
-            TopicState.ChainState chain = 7;
+            TopicState.ChainState chain = 3;
         }
     }
 }

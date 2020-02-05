@@ -332,28 +332,59 @@ final class Server: Logger {
         deviceData[device]!.topicKeyMessages.append(contentsOf: messages)
     }
     
-    func add(deliveryReceipts receipts: [MessageID], from sender: UserKey, to device: DeviceKey) {
-        guard let index = deviceData[device]!.receipts.firstIndex(where: { $0.sender == sender }) else {
+    private func add(deliveryReceipts receipts: [TopicID : UInt32], from sender: UserKey, to device: DeviceKey) -> RV_DeviceDownload.Receipt {
+        var data = deviceData[device]!
+        defer { deviceData[device] = data }
+        guard let index = data.receipts.firstIndex(where: { $0.sender == sender }) else {
+            // No sender yet, simply add all topics
             let receipt = RV_DeviceDownload.Receipt.with {
                 $0.sender = sender
-                $0.ids = receipts
+                $0.receipts = receipts.map { topic, chainIndex in
+                    .with { r in
+                        r.id = topic
+                        r.index = chainIndex
+                    }
+                }
             }
-            deviceData[device]!.receipts.append(receipt)
-            return
+            data.receipts.append(receipt)
+            return receipt
         }
-        deviceData[device]!.receipts[index].ids.append(contentsOf: receipts)
+
+        // Only return all receipts which are actually new for the device
+        return .with {
+            $0.sender = sender
+            $0.receipts = receipts.compactMap { (topic, chainIndex) in
+                let r = RV_DeviceDownload.Receipt.TopicReceipt.with {
+                    $0.id = topic
+                    $0.index = chainIndex
+                }
+                
+                // Check if a previous receipt exists for the topic
+                guard let i = data.receipts[index].receipts.firstIndex(where: { $0.id == topic }) else {
+                    data.receipts[index].receipts.append(r)
+                    return r
+                }
+                // Check if the receipt needs to be updated
+                let oldIndex = data.receipts[index].receipts[i].index
+                guard chainIndex > oldIndex else {
+                    return nil
+                }
+                data.receipts[index].receipts[i] = r
+                return r
+            }
+        }
     }
     
-    func send(deliveryReceipts receipts: [MessageID], to user: UserKey, from sender: UserKey, in app: String) {
+    func send(deliveryReceipts receipts: [TopicID : UInt32], to user: UserKey, from sender: UserKey, in app: String) {
         guard let devices = self.userDevices(user, app: app) else {
             return
         }
         #warning("Prevent multiple receipts from devices of the same user")
         for device in devices.filter({ $0.isActive }) {
             // Add the receipts to device bundle
-            add(deliveryReceipts: receipts, from: sender, to: device.deviceKey)
+            let newReceipts = add(deliveryReceipts: receipts, from: sender, to: device.deviceKey)
             // Send the notification
-            push(receipts: receipts, from: sender, to: device.deviceKey, of: user)
+            push(receipts: newReceipts, to: device.deviceKey, of: user)
         }
         
     }

@@ -215,8 +215,8 @@ struct RV_DeviceDownload {
     mutating func clearChain() {_uniqueStorage()._chain = nil}
 
     /// The actual message
-    var content: RV_TopicMessage {
-      get {return _storage._content ?? RV_TopicMessage()}
+    var content: RV_TopicUpdate {
+      get {return _storage._content ?? RV_TopicUpdate()}
       set {_uniqueStorage()._content = newValue}
     }
     /// Returns true if `content` has been explicitly set.
@@ -240,10 +240,27 @@ struct RV_DeviceDownload {
     /// The user sending the receipts
     var sender: Data = SwiftProtobuf.Internal.emptyData
 
-    /// The message ids of the delivered messages
-    var ids: [Data] = []
+    /// The current chain state in the topics
+    var receipts: [RV_DeviceDownload.Receipt.TopicReceipt] = []
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    /// A receipt of a user within a topic
+    struct TopicReceipt {
+      // SwiftProtobuf.Message conformance is added in an extension below. See the
+      // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+      // methods supported on all messages.
+
+      /// The topic id
+      var id: Data = SwiftProtobuf.Internal.emptyData
+
+      /// The next chain index for the user
+      var index: UInt32 = 0
+
+      var unknownFields = SwiftProtobuf.UnknownStorage()
+
+      init() {}
+    }
 
     init() {}
   }
@@ -652,7 +669,7 @@ struct RV_MessageChain {
   // methods supported on all messages.
 
   /// All messages in the chain
-  var messages: [RV_TopicMessage] = []
+  var messages: [RV_TopicUpdate] = []
 
   /// The result of iteratively hashing the message signatures: h_n = h(h_n-1 | h(s_n)); h_0 = id
   var output: Data = SwiftProtobuf.Internal.emptyData
@@ -713,7 +730,7 @@ struct RV_TopicState {
 }
 
 /// A request to upload a message
-struct RV_TopicMessageUpload {
+struct RV_TopicUpdateUpload {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -737,22 +754,39 @@ struct RV_TopicMessageUpload {
   }
 
   /// The message to add
-  var message: RV_TopicMessage {
-    get {return _storage._message ?? RV_TopicMessage()}
-    set {_uniqueStorage()._message = newValue}
+  var update: RV_TopicUpdate {
+    get {return _storage._update ?? RV_TopicUpdate()}
+    set {_uniqueStorage()._update = newValue}
   }
-  /// Returns true if `message` has been explicitly set.
-  var hasMessage: Bool {return _storage._message != nil}
-  /// Clears the value of `message`. Subsequent reads from it will return its default value.
-  mutating func clearMessage() {_uniqueStorage()._message = nil}
+  /// Returns true if `update` has been explicitly set.
+  var hasUpdate: Bool {return _storage._update != nil}
+  /// Clears the value of `update`. Subsequent reads from it will return its default value.
+  mutating func clearUpdate() {_uniqueStorage()._update = nil}
 
-  /// The data of the file to write to disk
-  var file: Data {
-    get {return _storage._file}
-    set {_uniqueStorage()._file = newValue}
+  /// The files to upload
+  var files: [RV_TopicUpdateUpload.FileData] {
+    get {return _storage._files}
+    set {_uniqueStorage()._files = newValue}
   }
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// The data of a file
+  struct FileData {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The file id
+    var id: Data = SwiftProtobuf.Internal.emptyData
+
+    /// The file data
+    var data: Data = SwiftProtobuf.Internal.emptyData
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    init() {}
+  }
 
   init() {}
 
@@ -760,7 +794,7 @@ struct RV_TopicMessageUpload {
 }
 
 /// A message posted to a topic
-struct RV_TopicMessage {
+struct RV_TopicUpdate {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -768,22 +802,36 @@ struct RV_TopicMessage {
   /// The sender's index in the list of topic members
   var indexInMemberList: UInt32 = 0
 
-  /// The id of the file added to the topic
-  var id: Data = SwiftProtobuf.Internal.emptyData
-
-  /// The hash of the encrypted file
-  var hash: Data = SwiftProtobuf.Internal.emptyData
-
-  /// The authentication tag of the file
-  var tag: Data = SwiftProtobuf.Internal.emptyData
+  /// The files included in the message
+  var files: [RV_TopicUpdate.File] = []
 
   /// Metadata encrypted with the message key.
   var metadata: Data = SwiftProtobuf.Internal.emptyData
 
-  /// The signature of the whole message with the signature key
+  /// The signature of the whole message (without file data) with the signature key
   var signature: Data = SwiftProtobuf.Internal.emptyData
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  /// An optional file associated with the message
+  struct File {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
+
+    /// The id of the message
+    var id: Data = SwiftProtobuf.Internal.emptyData
+
+    /// The hash of the encrypted file
+    var hash: Data = SwiftProtobuf.Internal.emptyData
+
+    /// The authentication tag of the file
+    var tag: Data = SwiftProtobuf.Internal.emptyData
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    init() {}
+  }
 
   init() {}
 }
@@ -1066,35 +1114,15 @@ struct RV_ClientData {
         set {_uniqueStorage()._senderPublicKey = newValue}
       }
 
-      /// The id of the file added to the topic
-      var id: Data {
-        get {return _storage._id}
-        set {_uniqueStorage()._id = newValue}
+      /// The message
+      var message: RV_TopicUpdate {
+        get {return _storage._message ?? RV_TopicUpdate()}
+        set {_uniqueStorage()._message = newValue}
       }
-
-      /// The hash of the encrypted file
-      var hash: Data {
-        get {return _storage._hash}
-        set {_uniqueStorage()._hash = newValue}
-      }
-
-      /// The authentication tag of the file
-      var tag: Data {
-        get {return _storage._tag}
-        set {_uniqueStorage()._tag = newValue}
-      }
-
-      /// The metadata of the file.
-      var metadata: Data {
-        get {return _storage._metadata}
-        set {_uniqueStorage()._metadata = newValue}
-      }
-
-      /// The signature of the message
-      var signature: Data {
-        get {return _storage._signature}
-        set {_uniqueStorage()._signature = newValue}
-      }
+      /// Returns true if `message` has been explicitly set.
+      var hasMessage: Bool {return _storage._message != nil}
+      /// Clears the value of `message`. Subsequent reads from it will return its default value.
+      mutating func clearMessage() {_uniqueStorage()._message = nil}
 
       /// The state of the chain after the message
       var chain: RV_TopicState.ChainState {
@@ -1491,7 +1519,7 @@ extension RV_DeviceDownload.Message: SwiftProtobuf.Message, SwiftProtobuf._Messa
   fileprivate class _StorageClass {
     var _topicID: Data = SwiftProtobuf.Internal.emptyData
     var _chain: RV_TopicState.ChainState? = nil
-    var _content: RV_TopicMessage? = nil
+    var _content: RV_TopicUpdate? = nil
 
     static let defaultInstance = _StorageClass()
 
@@ -1561,14 +1589,14 @@ extension RV_DeviceDownload.Receipt: SwiftProtobuf.Message, SwiftProtobuf._Messa
   static let protoMessageName: String = RV_DeviceDownload.protoMessageName + ".Receipt"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "sender"),
-    2: .same(proto: "ids"),
+    2: .same(proto: "receipts"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularBytesField(value: &self.sender)
-      case 2: try decoder.decodeRepeatedBytesField(value: &self.ids)
+      case 2: try decoder.decodeRepeatedMessageField(value: &self.receipts)
       default: break
       }
     }
@@ -1578,15 +1606,50 @@ extension RV_DeviceDownload.Receipt: SwiftProtobuf.Message, SwiftProtobuf._Messa
     if !self.sender.isEmpty {
       try visitor.visitSingularBytesField(value: self.sender, fieldNumber: 1)
     }
-    if !self.ids.isEmpty {
-      try visitor.visitRepeatedBytesField(value: self.ids, fieldNumber: 2)
+    if !self.receipts.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.receipts, fieldNumber: 2)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: RV_DeviceDownload.Receipt, rhs: RV_DeviceDownload.Receipt) -> Bool {
     if lhs.sender != rhs.sender {return false}
-    if lhs.ids != rhs.ids {return false}
+    if lhs.receipts != rhs.receipts {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension RV_DeviceDownload.Receipt.TopicReceipt: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = RV_DeviceDownload.Receipt.protoMessageName + ".TopicReceipt"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "id"),
+    2: .same(proto: "index"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularBytesField(value: &self.id)
+      case 2: try decoder.decodeSingularUInt32Field(value: &self.index)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularBytesField(value: self.id, fieldNumber: 1)
+    }
+    if self.index != 0 {
+      try visitor.visitSingularUInt32Field(value: self.index, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: RV_DeviceDownload.Receipt.TopicReceipt, rhs: RV_DeviceDownload.Receipt.TopicReceipt) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.index != rhs.index {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -2480,22 +2543,22 @@ extension RV_TopicState.ChainState: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 }
 
-extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".TopicMessageUpload"
+extension RV_TopicUpdateUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".TopicUpdateUpload"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "deviceKey"),
     2: .same(proto: "authToken"),
     3: .same(proto: "topicId"),
-    4: .same(proto: "message"),
-    5: .same(proto: "file"),
+    4: .same(proto: "update"),
+    5: .same(proto: "files"),
   ]
 
   fileprivate class _StorageClass {
     var _deviceKey: Data = SwiftProtobuf.Internal.emptyData
     var _authToken: Data = SwiftProtobuf.Internal.emptyData
     var _topicID: Data = SwiftProtobuf.Internal.emptyData
-    var _message: RV_TopicMessage? = nil
-    var _file: Data = SwiftProtobuf.Internal.emptyData
+    var _update: RV_TopicUpdate? = nil
+    var _files: [RV_TopicUpdateUpload.FileData] = []
 
     static let defaultInstance = _StorageClass()
 
@@ -2505,8 +2568,8 @@ extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       _deviceKey = source._deviceKey
       _authToken = source._authToken
       _topicID = source._topicID
-      _message = source._message
-      _file = source._file
+      _update = source._update
+      _files = source._files
     }
   }
 
@@ -2525,8 +2588,8 @@ extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         case 1: try decoder.decodeSingularBytesField(value: &_storage._deviceKey)
         case 2: try decoder.decodeSingularBytesField(value: &_storage._authToken)
         case 3: try decoder.decodeSingularBytesField(value: &_storage._topicID)
-        case 4: try decoder.decodeSingularMessageField(value: &_storage._message)
-        case 5: try decoder.decodeSingularBytesField(value: &_storage._file)
+        case 4: try decoder.decodeSingularMessageField(value: &_storage._update)
+        case 5: try decoder.decodeRepeatedMessageField(value: &_storage._files)
         default: break
         }
       }
@@ -2544,17 +2607,17 @@ extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       if !_storage._topicID.isEmpty {
         try visitor.visitSingularBytesField(value: _storage._topicID, fieldNumber: 3)
       }
-      if let v = _storage._message {
+      if let v = _storage._update {
         try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
       }
-      if !_storage._file.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._file, fieldNumber: 5)
+      if !_storage._files.isEmpty {
+        try visitor.visitRepeatedMessageField(value: _storage._files, fieldNumber: 5)
       }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: RV_TopicMessageUpload, rhs: RV_TopicMessageUpload) -> Bool {
+  static func ==(lhs: RV_TopicUpdateUpload, rhs: RV_TopicUpdateUpload) -> Bool {
     if lhs._storage !== rhs._storage {
       let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
         let _storage = _args.0
@@ -2562,8 +2625,8 @@ extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         if _storage._deviceKey != rhs_storage._deviceKey {return false}
         if _storage._authToken != rhs_storage._authToken {return false}
         if _storage._topicID != rhs_storage._topicID {return false}
-        if _storage._message != rhs_storage._message {return false}
-        if _storage._file != rhs_storage._file {return false}
+        if _storage._update != rhs_storage._update {return false}
+        if _storage._files != rhs_storage._files {return false}
         return true
       }
       if !storagesAreEqual {return false}
@@ -2573,13 +2636,46 @@ extension RV_TopicMessageUpload: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
   }
 }
 
-extension RV_TopicMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".TopicMessage"
+extension RV_TopicUpdateUpload.FileData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = RV_TopicUpdateUpload.protoMessageName + ".FileData"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "id"),
+    2: .same(proto: "data"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularBytesField(value: &self.id)
+      case 2: try decoder.decodeSingularBytesField(value: &self.data)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularBytesField(value: self.id, fieldNumber: 1)
+    }
+    if !self.data.isEmpty {
+      try visitor.visitSingularBytesField(value: self.data, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: RV_TopicUpdateUpload.FileData, rhs: RV_TopicUpdateUpload.FileData) -> Bool {
+    if lhs.id != rhs.id {return false}
+    if lhs.data != rhs.data {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension RV_TopicUpdate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".TopicUpdate"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "indexInMemberList"),
-    2: .same(proto: "id"),
-    3: .same(proto: "hash"),
-    4: .same(proto: "tag"),
+    3: .same(proto: "files"),
     5: .same(proto: "metadata"),
     6: .same(proto: "signature"),
   ]
@@ -2588,9 +2684,7 @@ extension RV_TopicMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplemen
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularUInt32Field(value: &self.indexInMemberList)
-      case 2: try decoder.decodeSingularBytesField(value: &self.id)
-      case 3: try decoder.decodeSingularBytesField(value: &self.hash)
-      case 4: try decoder.decodeSingularBytesField(value: &self.tag)
+      case 3: try decoder.decodeRepeatedMessageField(value: &self.files)
       case 5: try decoder.decodeSingularBytesField(value: &self.metadata)
       case 6: try decoder.decodeSingularBytesField(value: &self.signature)
       default: break
@@ -2602,14 +2696,8 @@ extension RV_TopicMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplemen
     if self.indexInMemberList != 0 {
       try visitor.visitSingularUInt32Field(value: self.indexInMemberList, fieldNumber: 1)
     }
-    if !self.id.isEmpty {
-      try visitor.visitSingularBytesField(value: self.id, fieldNumber: 2)
-    }
-    if !self.hash.isEmpty {
-      try visitor.visitSingularBytesField(value: self.hash, fieldNumber: 3)
-    }
-    if !self.tag.isEmpty {
-      try visitor.visitSingularBytesField(value: self.tag, fieldNumber: 4)
+    if !self.files.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.files, fieldNumber: 3)
     }
     if !self.metadata.isEmpty {
       try visitor.visitSingularBytesField(value: self.metadata, fieldNumber: 5)
@@ -2620,13 +2708,52 @@ extension RV_TopicMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplemen
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: RV_TopicMessage, rhs: RV_TopicMessage) -> Bool {
+  static func ==(lhs: RV_TopicUpdate, rhs: RV_TopicUpdate) -> Bool {
     if lhs.indexInMemberList != rhs.indexInMemberList {return false}
+    if lhs.files != rhs.files {return false}
+    if lhs.metadata != rhs.metadata {return false}
+    if lhs.signature != rhs.signature {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension RV_TopicUpdate.File: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = RV_TopicUpdate.protoMessageName + ".File"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "id"),
+    2: .same(proto: "hash"),
+    3: .same(proto: "tag"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularBytesField(value: &self.id)
+      case 2: try decoder.decodeSingularBytesField(value: &self.hash)
+      case 3: try decoder.decodeSingularBytesField(value: &self.tag)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularBytesField(value: self.id, fieldNumber: 1)
+    }
+    if !self.hash.isEmpty {
+      try visitor.visitSingularBytesField(value: self.hash, fieldNumber: 2)
+    }
+    if !self.tag.isEmpty {
+      try visitor.visitSingularBytesField(value: self.tag, fieldNumber: 3)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: RV_TopicUpdate.File, rhs: RV_TopicUpdate.File) -> Bool {
     if lhs.id != rhs.id {return false}
     if lhs.hash != rhs.hash {return false}
     if lhs.tag != rhs.tag {return false}
-    if lhs.metadata != rhs.metadata {return false}
-    if lhs.signature != rhs.signature {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -3171,21 +3298,13 @@ extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, Swi
   static let protoMessageName: String = RV_ClientData.TopicStore.protoMessageName + ".UnverifiedMessage"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "senderPublicKey"),
-    2: .same(proto: "id"),
-    3: .same(proto: "hash"),
-    4: .same(proto: "tag"),
-    5: .same(proto: "metadata"),
-    6: .same(proto: "signature"),
-    7: .same(proto: "chain"),
+    2: .same(proto: "message"),
+    3: .same(proto: "chain"),
   ]
 
   fileprivate class _StorageClass {
     var _senderPublicKey: Data = SwiftProtobuf.Internal.emptyData
-    var _id: Data = SwiftProtobuf.Internal.emptyData
-    var _hash: Data = SwiftProtobuf.Internal.emptyData
-    var _tag: Data = SwiftProtobuf.Internal.emptyData
-    var _metadata: Data = SwiftProtobuf.Internal.emptyData
-    var _signature: Data = SwiftProtobuf.Internal.emptyData
+    var _message: RV_TopicUpdate? = nil
     var _chain: RV_TopicState.ChainState? = nil
 
     static let defaultInstance = _StorageClass()
@@ -3194,11 +3313,7 @@ extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, Swi
 
     init(copying source: _StorageClass) {
       _senderPublicKey = source._senderPublicKey
-      _id = source._id
-      _hash = source._hash
-      _tag = source._tag
-      _metadata = source._metadata
-      _signature = source._signature
+      _message = source._message
       _chain = source._chain
     }
   }
@@ -3216,12 +3331,8 @@ extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, Swi
       while let fieldNumber = try decoder.nextFieldNumber() {
         switch fieldNumber {
         case 1: try decoder.decodeSingularBytesField(value: &_storage._senderPublicKey)
-        case 2: try decoder.decodeSingularBytesField(value: &_storage._id)
-        case 3: try decoder.decodeSingularBytesField(value: &_storage._hash)
-        case 4: try decoder.decodeSingularBytesField(value: &_storage._tag)
-        case 5: try decoder.decodeSingularBytesField(value: &_storage._metadata)
-        case 6: try decoder.decodeSingularBytesField(value: &_storage._signature)
-        case 7: try decoder.decodeSingularMessageField(value: &_storage._chain)
+        case 2: try decoder.decodeSingularMessageField(value: &_storage._message)
+        case 3: try decoder.decodeSingularMessageField(value: &_storage._chain)
         default: break
         }
       }
@@ -3233,23 +3344,11 @@ extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, Swi
       if !_storage._senderPublicKey.isEmpty {
         try visitor.visitSingularBytesField(value: _storage._senderPublicKey, fieldNumber: 1)
       }
-      if !_storage._id.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._id, fieldNumber: 2)
-      }
-      if !_storage._hash.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._hash, fieldNumber: 3)
-      }
-      if !_storage._tag.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._tag, fieldNumber: 4)
-      }
-      if !_storage._metadata.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._metadata, fieldNumber: 5)
-      }
-      if !_storage._signature.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._signature, fieldNumber: 6)
+      if let v = _storage._message {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
       }
       if let v = _storage._chain {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 7)
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
       }
     }
     try unknownFields.traverse(visitor: &visitor)
@@ -3261,11 +3360,7 @@ extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, Swi
         let _storage = _args.0
         let rhs_storage = _args.1
         if _storage._senderPublicKey != rhs_storage._senderPublicKey {return false}
-        if _storage._id != rhs_storage._id {return false}
-        if _storage._hash != rhs_storage._hash {return false}
-        if _storage._tag != rhs_storage._tag {return false}
-        if _storage._metadata != rhs_storage._metadata {return false}
-        if _storage._signature != rhs_storage._signature {return false}
+        if _storage._message != rhs_storage._message {return false}
         if _storage._chain != rhs_storage._chain {return false}
         return true
       }

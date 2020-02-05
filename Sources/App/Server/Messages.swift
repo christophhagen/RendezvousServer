@@ -39,12 +39,31 @@ extension Server {
      */
     func addMessage(_ request: Request) throws -> Data {
         let data = try request.body()
-        let upload = try RV_TopicMessageUpload(validRequest: data)
+        var upload = try RV_TopicUpdateUpload(validRequest: data)
         
         // Check the length of relevant fields
-        guard upload.message.metadata.count < Constants.maximumMetadataLength,
-            upload.message.id.count == Constants.messageIdLength else {
+        guard upload.update.metadata.count < Constants.maximumMetadataLength else {
                 throw RendezvousError.invalidRequest
+        }
+        
+        // Check the files in the bundle
+        try upload.update.files.forEach { file in
+            guard file.id.count == Constants.messageIdLength,
+                file.tag.count == Constants.tagLength,
+                file.hash.count == Constants.hashLength else {
+                    throw RendezvousError.invalidRequest
+            }
+            #warning("Check that missing file data was already uploaded")
+        }
+        try upload.files.forEach { file in
+            // Check that a file exists for each message
+            // Calculate the hash of the file and compare it to the message value
+            guard file.id.count == Constants.messageIdLength,
+                file.data.count > 0,
+                let f = upload.update.files.first(where: { $0.id == file.id }),
+                try SHA256.hash(file.data) == f.hash else {
+                    throw RendezvousError.invalidRequest
+            }
         }
         
         try authenticateDevice(upload.deviceKey, token: upload.authToken)
@@ -55,7 +74,7 @@ extension Server {
         }
         
         // Get the member who uploaded the message
-        let index = Int(upload.message.indexInMemberList)
+        let index = Int(upload.update.indexInMemberList)
         guard index < topic.info.members.count else {
             throw RendezvousError.invalidRequest
         }
@@ -70,31 +89,21 @@ extension Server {
         guard let signatureKey = try? member.signatureKey.toPublicKey() else {
             throw RendezvousError.invalidRequest
         }
-        try upload.message.verifySignature(with: signatureKey)
+        try upload.update.verifySignature(with: signatureKey)
         
-        // If a file exists, check it
-        if upload.file.count != 0 {
-            // Calculate the hash of the file and compare it to the message value
-            guard try SHA256.hash(upload.file) == upload.message.hash else {
-                throw RendezvousError.invalidRequest
-            }
-            
+        // Store each file
+        for file in upload.files {
             // Store the file
-            try storage.store(file: upload.file, with: upload.message.id, in: upload.topicID)
-        } else {
-            // Check that the hash is also empty.
-            guard upload.message.hash.count == 0 else {
-                throw RendezvousError.invalidRequest
-            }
+            try storage.store(file: file.data, with: file.id, in: upload.topicID)
         }
         
-        // Store the message
-        let output = try storage.store(message: upload.message, in: upload.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)
+        // Store the update
+        let output = try storage.store(message: upload.update, in: upload.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)
         
         // Store the new chain state
         let message = RV_DeviceDownload.Message.with {
             $0.topicID = upload.topicID
-            $0.content = upload.message
+            $0.content = upload.update
             $0.chain = .with { chain in
                 chain.nextChainIndex = topic.chain.nextChainIndex + 1
                 chain.output = output
@@ -132,16 +141,20 @@ extension Server {
         let data = getAndClearDeviceData(deviceKey)
         
         // Create delivery receipts for each user
-        var delivered = [UserKey : [MessageID]]()
+        var delivered = [UserKey : [TopicID : UInt32]]()
         for message in data.messages {
             guard let members = self.topic(id: message.topicID)?.info.members.map({ $0.info.userKey }) else {
                 // Topic doesn't exist (anymore?)
                 continue
             }
-            let messageId = message.content.id
+            let chainIndex = message.chain.nextChainIndex
             // Add the message to the dictionary for each user
             for member in members {
-                delivered[member, default: []].append(messageId)
+                guard let old = delivered[member]?[message.topicID] else {
+                    delivered[member] = [message.topicID : chainIndex]
+                    continue
+                }
+                delivered[member, default: [:]][message.topicID] = max(old, chainIndex)
             }
         }
         

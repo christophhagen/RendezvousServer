@@ -30,6 +30,12 @@ public enum Constants {
     /// The length of a message id
     public static let messageIdLength = 12
     
+    /// The length of a SHA256 hash (in bytes)
+    public static let hashLength = 32
+    
+    /// The length of a message authentication code
+    public static let tagLength = 16
+    
     /// The maximum length of an app id
     public static let maximumAppIdLength = 10
     

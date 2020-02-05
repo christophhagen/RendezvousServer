@@ -22,12 +22,8 @@ extension Server {
         push(topicUpdate, type: "topic", to: device, of: user)
     }
     
-    func push(receipts: [MessageID], from sender: UserKey, to device: DeviceKey, of user: UserKey) {
-        let receiptBundle = RV_DeviceDownload.Receipt.with {
-            $0.sender = sender
-            $0.ids = receipts
-        }
-        push(receiptBundle, type: "receipts", to: device, of: user)
+    func push(receipts: RV_DeviceDownload.Receipt, to device: DeviceKey, of user: UserKey) {
+        push(receipts, type: "receipts", to: device, of: user)
     }
     
     private func push(_ object: SwiftProtobuf.Message, type: String, to device: DeviceKey, of user: UserKey) {

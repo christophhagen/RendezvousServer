@@ -134,7 +134,7 @@ message DeviceDownload {
             // The topic id
             bytes id = 1;
             
-            // The next chain index for the user
+            // The current chain index for the user
             uint32 index = 2;
         }
     }
@@ -384,8 +384,8 @@ message TopicState {
     // The current state of the message chain
     message ChainState {
         
-        // The chain index for the next message
-        uint32 nextChainIndex = 1;
+        // The chain index for the last message
+        uint32 chainIndex = 1;
         
         // The current output of the chain
         bytes output = 2;
@@ -577,7 +577,7 @@ message ClientData {
         bytes signatureKey = 4;
         
         // The last message index which could be verified
-        uint32 nextChainIndex = 5;
+        uint32 currentChainIndex = 5;
         
         /// The last output which could be verified.
         bytes verifiedOutput = 6;

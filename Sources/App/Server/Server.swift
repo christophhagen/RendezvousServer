@@ -304,7 +304,7 @@ final class Server: Logger {
         topics[topic.topicID] = .with {
             $0.info = topic
             $0.chain = .with { chain in
-                chain.nextChainIndex = 0
+                chain.chainIndex = 0
                 chain.output = topic.topicID
             }
         }

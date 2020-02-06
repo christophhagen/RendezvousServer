@@ -254,7 +254,7 @@ struct RV_DeviceDownload {
       /// The topic id
       var id: Data = SwiftProtobuf.Internal.emptyData
 
-      /// The next chain index for the user
+      /// The current chain index for the user
       var index: UInt32 = 0
 
       var unknownFields = SwiftProtobuf.UnknownStorage()
@@ -713,8 +713,8 @@ struct RV_TopicState {
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
-    /// The chain index for the next message
-    var nextChainIndex: UInt32 = 0
+    /// The chain index for the last message
+    var chainIndex: UInt32 = 0
 
     /// The current output of the chain
     var output: Data = SwiftProtobuf.Internal.emptyData
@@ -1083,9 +1083,9 @@ struct RV_ClientData {
     }
 
     /// The last message index which could be verified
-    var nextChainIndex: UInt32 {
-      get {return _storage._nextChainIndex}
-      set {_uniqueStorage()._nextChainIndex = newValue}
+    var currentChainIndex: UInt32 {
+      get {return _storage._currentChainIndex}
+      set {_uniqueStorage()._currentChainIndex = newValue}
     }
 
     //// The last output which could be verified.
@@ -2511,14 +2511,14 @@ extension RV_TopicState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
 extension RV_TopicState.ChainState: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = RV_TopicState.protoMessageName + ".ChainState"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "nextChainIndex"),
+    1: .same(proto: "chainIndex"),
     2: .same(proto: "output"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
-      case 1: try decoder.decodeSingularUInt32Field(value: &self.nextChainIndex)
+      case 1: try decoder.decodeSingularUInt32Field(value: &self.chainIndex)
       case 2: try decoder.decodeSingularBytesField(value: &self.output)
       default: break
       }
@@ -2526,8 +2526,8 @@ extension RV_TopicState.ChainState: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.nextChainIndex != 0 {
-      try visitor.visitSingularUInt32Field(value: self.nextChainIndex, fieldNumber: 1)
+    if self.chainIndex != 0 {
+      try visitor.visitSingularUInt32Field(value: self.chainIndex, fieldNumber: 1)
     }
     if !self.output.isEmpty {
       try visitor.visitSingularBytesField(value: self.output, fieldNumber: 2)
@@ -2536,7 +2536,7 @@ extension RV_TopicState.ChainState: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 
   static func ==(lhs: RV_TopicState.ChainState, rhs: RV_TopicState.ChainState) -> Bool {
-    if lhs.nextChainIndex != rhs.nextChainIndex {return false}
+    if lhs.chainIndex != rhs.chainIndex {return false}
     if lhs.output != rhs.output {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -3192,7 +3192,7 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
     2: .same(proto: "messageKey"),
     3: .same(proto: "encryptionKey"),
     4: .same(proto: "signatureKey"),
-    5: .same(proto: "nextChainIndex"),
+    5: .same(proto: "currentChainIndex"),
     6: .same(proto: "verifiedOutput"),
     7: .same(proto: "unverifiedMessages"),
   ]
@@ -3202,7 +3202,7 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
     var _messageKey: Data = SwiftProtobuf.Internal.emptyData
     var _encryptionKey: Data = SwiftProtobuf.Internal.emptyData
     var _signatureKey: Data = SwiftProtobuf.Internal.emptyData
-    var _nextChainIndex: UInt32 = 0
+    var _currentChainIndex: UInt32 = 0
     var _verifiedOutput: Data = SwiftProtobuf.Internal.emptyData
     var _unverifiedMessages: [RV_ClientData.TopicStore.UnverifiedMessage] = []
 
@@ -3215,7 +3215,7 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
       _messageKey = source._messageKey
       _encryptionKey = source._encryptionKey
       _signatureKey = source._signatureKey
-      _nextChainIndex = source._nextChainIndex
+      _currentChainIndex = source._currentChainIndex
       _verifiedOutput = source._verifiedOutput
       _unverifiedMessages = source._unverifiedMessages
     }
@@ -3237,7 +3237,7 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
         case 2: try decoder.decodeSingularBytesField(value: &_storage._messageKey)
         case 3: try decoder.decodeSingularBytesField(value: &_storage._encryptionKey)
         case 4: try decoder.decodeSingularBytesField(value: &_storage._signatureKey)
-        case 5: try decoder.decodeSingularUInt32Field(value: &_storage._nextChainIndex)
+        case 5: try decoder.decodeSingularUInt32Field(value: &_storage._currentChainIndex)
         case 6: try decoder.decodeSingularBytesField(value: &_storage._verifiedOutput)
         case 7: try decoder.decodeRepeatedMessageField(value: &_storage._unverifiedMessages)
         default: break
@@ -3260,8 +3260,8 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
       if !_storage._signatureKey.isEmpty {
         try visitor.visitSingularBytesField(value: _storage._signatureKey, fieldNumber: 4)
       }
-      if _storage._nextChainIndex != 0 {
-        try visitor.visitSingularUInt32Field(value: _storage._nextChainIndex, fieldNumber: 5)
+      if _storage._currentChainIndex != 0 {
+        try visitor.visitSingularUInt32Field(value: _storage._currentChainIndex, fieldNumber: 5)
       }
       if !_storage._verifiedOutput.isEmpty {
         try visitor.visitSingularBytesField(value: _storage._verifiedOutput, fieldNumber: 6)
@@ -3282,7 +3282,7 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
         if _storage._messageKey != rhs_storage._messageKey {return false}
         if _storage._encryptionKey != rhs_storage._encryptionKey {return false}
         if _storage._signatureKey != rhs_storage._signatureKey {return false}
-        if _storage._nextChainIndex != rhs_storage._nextChainIndex {return false}
+        if _storage._currentChainIndex != rhs_storage._currentChainIndex {return false}
         if _storage._verifiedOutput != rhs_storage._verifiedOutput {return false}
         if _storage._unverifiedMessages != rhs_storage._unverifiedMessages {return false}
         return true

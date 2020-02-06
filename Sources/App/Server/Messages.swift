@@ -98,14 +98,14 @@ extension Server {
         }
         
         // Store the update
-        let output = try storage.store(message: upload.update, in: upload.topicID, with: topic.chain.nextChainIndex, and: topic.chain.output)
+        let output = try storage.store(message: upload.update, in: upload.topicID, with: topic.chain.chainIndex + 1, and: topic.chain.output)
         
         // Store the new chain state
         let message = RV_DeviceDownload.Message.with {
             $0.topicID = upload.topicID
             $0.content = upload.update
             $0.chain = .with { chain in
-                chain.nextChainIndex = topic.chain.nextChainIndex + 1
+                chain.chainIndex = topic.chain.chainIndex + 1
                 chain.output = output
             }
         }
@@ -147,7 +147,7 @@ extension Server {
                 // Topic doesn't exist (anymore?)
                 continue
             }
-            let chainIndex = message.chain.nextChainIndex
+            let chainIndex = message.chain.chainIndex
             // Add the message to the dictionary for each user
             for member in members {
                 guard let old = delivered[member]?[message.topicID] else {
@@ -189,7 +189,7 @@ extension Server {
         }
         
         // Limit the requested range to reasonable values
-        let messageCount = Int(topic.chain.nextChainIndex)
+        let messageCount = Int(topic.chain.chainIndex) + 1
         guard start < messageCount, count > 0 else {
             return Data()
         }

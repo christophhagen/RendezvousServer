@@ -39,7 +39,7 @@ extension Server {
      */
     func addMessage(_ request: Request) throws -> Data {
         let data = try request.body()
-        var upload = try RV_TopicUpdateUpload(validRequest: data)
+        let upload = try RV_TopicUpdateUpload(validRequest: data)
         
         // Check the length of relevant fields
         guard upload.update.metadata.count < Constants.maximumMetadataLength else {

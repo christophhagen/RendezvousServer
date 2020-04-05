@@ -38,7 +38,7 @@ extension SignedProtobuf {
      - Parameter publicKey: The public key to verify the signature.
      - Throws: `RendezvousError.invalidSignature`, `BinaryEncodingError`
      */
-    func verifySignature(with publicKey: Curve25519.Signing.PublicKey) throws {
+    func verifySignature(with publicKey: SigningPublicKey) throws {
         let signature = self.signature
         let data = try dataWithoutSignature()
         guard publicKey.isValidSignature(signature, for: data) else {

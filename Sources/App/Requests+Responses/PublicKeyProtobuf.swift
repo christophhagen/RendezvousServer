@@ -16,7 +16,7 @@ protocol PublicKeyProtobuf: SwiftProtobuf.Message {
 
 extension PublicKeyProtobuf {
     
-    mutating func set(publicKey: Curve25519.Signing.PublicKey) {
+    mutating func set(publicKey: SigningPublicKey) {
         self.publicKey = publicKey.rawRepresentation
     }
     
@@ -25,7 +25,7 @@ extension PublicKeyProtobuf {
      - Returns: The valid public key.
      - Throws: `RendezvousError.invalidRequest`, if the key is invalid.
      */
-    func getPublicKey() throws -> Curve25519.Signing.PublicKey {
+    func getPublicKey() throws -> SigningPublicKey {
         do {
             return try .init(rawRepresentation: publicKey)
         } catch {

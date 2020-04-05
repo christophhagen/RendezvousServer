@@ -584,18 +584,18 @@ message ClientData {
         
         // All messages which couldn't be verified yet.
         repeated UnverifiedMessage unverifiedMessages = 7;
-        
-        // A message which could not yet be verified to be in the topic chain
+
+        // The essence of a message which could not yet be verified to be in the topic chain
         message UnverifiedMessage {
-            
-            // The public key of the sender
-            bytes senderPublicKey = 1;
-            
-            // The message
-            TopicUpdate message = 2;
-            
-            // The state of the chain after the message
-            TopicState.ChainState chain = 3;
+
+            // The signature of the update
+            bytes signature = 1;
+
+            // The chain index for the last message
+            uint32 chainIndex = 2;
+
+            // The current output of the chain
+            bytes output = 3;
         }
     }
 }

@@ -1102,43 +1102,24 @@ struct RV_ClientData {
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
-    /// A message which could not yet be verified to be in the topic chain
+    /// The essence of a message which could not yet be verified to be in the topic chain
     struct UnverifiedMessage {
       // SwiftProtobuf.Message conformance is added in an extension below. See the
       // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
       // methods supported on all messages.
 
-      /// The public key of the sender
-      var senderPublicKey: Data {
-        get {return _storage._senderPublicKey}
-        set {_uniqueStorage()._senderPublicKey = newValue}
-      }
+      /// The signature of the update
+      var signature: Data = SwiftProtobuf.Internal.emptyData
 
-      /// The message
-      var message: RV_TopicUpdate {
-        get {return _storage._message ?? RV_TopicUpdate()}
-        set {_uniqueStorage()._message = newValue}
-      }
-      /// Returns true if `message` has been explicitly set.
-      var hasMessage: Bool {return _storage._message != nil}
-      /// Clears the value of `message`. Subsequent reads from it will return its default value.
-      mutating func clearMessage() {_uniqueStorage()._message = nil}
+      /// The chain index for the last message
+      var chainIndex: UInt32 = 0
 
-      /// The state of the chain after the message
-      var chain: RV_TopicState.ChainState {
-        get {return _storage._chain ?? RV_TopicState.ChainState()}
-        set {_uniqueStorage()._chain = newValue}
-      }
-      /// Returns true if `chain` has been explicitly set.
-      var hasChain: Bool {return _storage._chain != nil}
-      /// Clears the value of `chain`. Subsequent reads from it will return its default value.
-      mutating func clearChain() {_uniqueStorage()._chain = nil}
+      /// The current output of the chain
+      var output: Data = SwiftProtobuf.Internal.emptyData
 
       var unknownFields = SwiftProtobuf.UnknownStorage()
 
       init() {}
-
-      fileprivate var _storage = _StorageClass.defaultInstance
     }
 
     init() {}
@@ -3297,75 +3278,39 @@ extension RV_ClientData.TopicStore: SwiftProtobuf.Message, SwiftProtobuf._Messag
 extension RV_ClientData.TopicStore.UnverifiedMessage: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = RV_ClientData.TopicStore.protoMessageName + ".UnverifiedMessage"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "senderPublicKey"),
-    2: .same(proto: "message"),
-    3: .same(proto: "chain"),
+    1: .same(proto: "signature"),
+    2: .same(proto: "chainIndex"),
+    3: .same(proto: "output"),
   ]
 
-  fileprivate class _StorageClass {
-    var _senderPublicKey: Data = SwiftProtobuf.Internal.emptyData
-    var _message: RV_TopicUpdate? = nil
-    var _chain: RV_TopicState.ChainState? = nil
-
-    static let defaultInstance = _StorageClass()
-
-    private init() {}
-
-    init(copying source: _StorageClass) {
-      _senderPublicKey = source._senderPublicKey
-      _message = source._message
-      _chain = source._chain
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
-
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        switch fieldNumber {
-        case 1: try decoder.decodeSingularBytesField(value: &_storage._senderPublicKey)
-        case 2: try decoder.decodeSingularMessageField(value: &_storage._message)
-        case 3: try decoder.decodeSingularMessageField(value: &_storage._chain)
-        default: break
-        }
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularBytesField(value: &self.signature)
+      case 2: try decoder.decodeSingularUInt32Field(value: &self.chainIndex)
+      case 3: try decoder.decodeSingularBytesField(value: &self.output)
+      default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      if !_storage._senderPublicKey.isEmpty {
-        try visitor.visitSingularBytesField(value: _storage._senderPublicKey, fieldNumber: 1)
-      }
-      if let v = _storage._message {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-      }
-      if let v = _storage._chain {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-      }
+    if !self.signature.isEmpty {
+      try visitor.visitSingularBytesField(value: self.signature, fieldNumber: 1)
+    }
+    if self.chainIndex != 0 {
+      try visitor.visitSingularUInt32Field(value: self.chainIndex, fieldNumber: 2)
+    }
+    if !self.output.isEmpty {
+      try visitor.visitSingularBytesField(value: self.output, fieldNumber: 3)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: RV_ClientData.TopicStore.UnverifiedMessage, rhs: RV_ClientData.TopicStore.UnverifiedMessage) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._senderPublicKey != rhs_storage._senderPublicKey {return false}
-        if _storage._message != rhs_storage._message {return false}
-        if _storage._chain != rhs_storage._chain {return false}
-        return true
-      }
-      if !storagesAreEqual {return false}
-    }
+    if lhs.signature != rhs.signature {return false}
+    if lhs.chainIndex != rhs.chainIndex {return false}
+    if lhs.output != rhs.output {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

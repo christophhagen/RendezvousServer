@@ -7,6 +7,11 @@
 
 import Foundation
 import Crypto
+import CryptoKit25519
+
+public typealias SigningPublicKey = Curve25519.Signing.PublicKey
+public typealias SigningPrivateKey = Curve25519.Signing.PrivateKey
+
 
 func timeInSeconds() -> UInt32 {
      return UInt32(Date().timeIntervalSince1970)

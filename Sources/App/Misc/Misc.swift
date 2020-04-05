@@ -15,7 +15,7 @@ extension Data {
      - Returns: The public key.
      - Throws: `RendezvousError.invalidRequest`, if the data is not a valid public key.
      */
-    func toPublicKey() throws -> Curve25519.Signing.PublicKey {
+    func toPublicKey() throws -> SigningPublicKey {
         do {
             return try .init(rawRepresentation: self)
         } catch {

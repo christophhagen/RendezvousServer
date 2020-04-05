@@ -139,4 +139,68 @@ extension Server {
         didChangeData()
     }
     
+    func enableTestAccounts(_ request: Request) throws {
+        try checkAdminAccess(request)
+        
+        // Alice
+        set(userInfo: aliceUserInfo)
+        set(authToken: aliceAuthToken, for: aliceDeviceKey)
+        createDeviceData(for: aliceDeviceKey, remainingPreKeys: 0, remainingTopicKeys: 0)
+        
+        // Bob
+        set(userInfo: bobUserInfo)
+        set(authToken: bobAuthToken, for: bobDeviceKey)
+        createDeviceData(for: bobDeviceKey, remainingPreKeys: 0, remainingTopicKeys: 0)
+        
+        // Create topic
+        try storage.create(topic: topicId)
+        add(topic: topicForAliceAndBob)
+    }
+}
+
+private var aliceUserKey: SigningPrivateKey {
+    SigningPrivateKey("39XzfZHV9iT5kDbgn7od8bLhUF5Yceu64mLf/hml3qo=")
+}
+
+private var bobUserKey: SigningPrivateKey {
+    SigningPrivateKey("IHUznMEmKl4jUaMa+WxDbFFAAXLOYrEUWe1TpHdzpIQ=")
+}
+
+private var aliceDeviceKey: DeviceKey {
+    SigningPrivateKey("gAil9KMsuXrhNzrA6/uIicEq7s2h8haSMCwDfKIkMvY=").publicKey.rawRepresentation
+}
+
+private var bobDeviceKey: DeviceKey {
+    SigningPrivateKey("lBiJ6qRU9SEpB27UMMeSKfpi/gfAYuannkP1KcteZ1o=").publicKey.rawRepresentation
+}
+
+private var aliceAuthToken: Data {
+    Data(base64Encoded: "51ajGY/YncZQh4k+OAjeEA==")!
+}
+
+private var bobAuthToken: Data {
+    Data(base64Encoded: "XxGKcXdxST74MigCfTNiPA==")!
+}
+
+private var aliceUserInfo: RV_InternalUser {
+    try! .init(serializedData: Data(base64Encoded: "CiDKdUb1kY4LsZbIq/gCfxJFg6wNdxQMZiyAVOxDi6MhKRDIu6P0BRoFQWxpY2UiLgogTtrvi4edyq0bvXYYtB3NHrUprRL+bLgvpHlFCvccMw8QyLuj9AUYASICQ0MoyLuj9AU6QCbo9rtLlKfGixtstQFKk6deAfjaZkd4OZXHpPoyWH75B2s59fq+fSPHqG9wejpNDoOze+lF1mvVUNYjWju+hgk=")!)
+}
+
+private var bobUserInfo: RV_InternalUser {
+    try! .init(serializedData: Data(base64Encoded: "CiAJIw6IEjgTn218itF6oyPFLnkpMTp/yHfSRL0r069YyhDZ2qP0BRoDQm9iIi4KILMn1C+mnpftvFOR7xwNq4+aDehzscC8wAAEa4C4vgkqENnao/QFGAEiAkNDKNnao/QFOkBiqGvL4AbPWuXnVzHldkMAaTbDYhShrwZ5jhCleowBoMQx3643tV6ddvx/kcMam4KvqSUfeqYss5yoBT7ffk0G")!)
+}
+
+private var topicId: TopicID {
+    Data(base64Encoded: "WVDrge+XZp9heqPO")!
+}
+
+private var topicForAliceAndBob: RV_Topic {
+    try! .init(serializedData: Data(base64Encoded: "")!)
+}
+
+private extension SigningPrivateKey {
+    
+    init(_ base64: String) {
+        try! self.init(rawRepresentation: Data(base64Encoded: base64)!)
+    }
 }

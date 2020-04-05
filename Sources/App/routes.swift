@@ -21,6 +21,8 @@ public func routes(_ router: Router) throws {
     if server.isDevelopmentServer {
         // Reset the server
         router.getCatching("admin", "reset", call: server.deleteAllServerData)
+        
+        router.getCatching("admin", "accounts", call: server.enableTestAccounts)
     }
     
     // Allow registration of a new user

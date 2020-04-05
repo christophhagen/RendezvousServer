@@ -124,20 +124,22 @@ extension Server {
         // Check if authentication is valid
         try authenticateUser(request.publicKey, device: request.deviceKey, token: request.authToken)
         
-        let keys = request.users.compactMap { userKey -> RV_TopicKeyResponse.User? in
-            // Check if user exists
-            guard let user = self.user(with: userKey) else {
-                return nil
+        // Chech that all users exist before messing with keys
+        try request.users.forEach { userKey in
+            if !self.userExists(userKey){
+                throw RendezvousError.resourceNotAvailable
             }
-            
-            // Get a topic key
+        }
+        
+        let keys = request.users.compactMap { userKey -> RV_TopicKeyResponse.User? in
+           // Get a topic key
             guard let topicKey = try? storage.getTopicKey(for: request.application, of: userKey) else {
                 return nil
             }
             
             // Decrease the available count
-            for device in user.devices {
-                decrementRemainingTopicKeys(for: device.deviceKey)
+            self.user(with: userKey)!.devices.forEach {
+                decrementRemainingTopicKeys(for: $0.deviceKey)
             }
             return .with {
                 $0.publicKey = userKey

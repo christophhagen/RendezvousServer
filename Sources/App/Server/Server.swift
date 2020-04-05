@@ -151,7 +151,10 @@ final class Server: Logger {
         self.oldDeviceData = object.oldDeviceData.dict { ($0.deviceKey, $0.data) }
         self.topics = object.topics.dict { $0.info.topicID }
         
-        self.defaultNotificationServer = URL(string: object.notificationServer)!
+        guard let url = URL(string: object.notificationServer) else {
+            fatalError("Invalid notification server: \(object.notificationServer)")
+        }
+        self.defaultNotificationServer = url
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
@@ -169,7 +172,7 @@ final class Server: Logger {
             item.oldDeviceData = oldDeviceData.map(RV_ManagementData.DeviceData.from)
             item.topics = Array(topics.values)
             
-            item.notificationServer = defaultNotificationServer.path
+            item.notificationServer = defaultNotificationServer.absoluteString
         }
         
         // Protobuf serialization should never fail, since it is correctly setup.

@@ -43,7 +43,8 @@ extension Server {
         
         // Check the length of relevant fields
         guard upload.update.metadata.count < Constants.maximumMetadataLength else {
-                throw RendezvousError.invalidRequest
+            log(debug: "Metadata too long \(upload.update.metadata)")
+            throw RendezvousError.invalidRequest
         }
         
         // Check the files in the bundle
@@ -51,6 +52,7 @@ extension Server {
             guard file.id.count == Constants.messageIdLength,
                 file.tag.count == Constants.tagLength,
                 file.hash.count == Constants.hashLength else {
+                    log(debug: "Invalid id/tag/hash length")
                     throw RendezvousError.invalidRequest
             }
             #warning("Check that missing file data was already uploaded")
@@ -62,6 +64,7 @@ extension Server {
                 file.data.count > 0,
                 let f = upload.update.files.first(where: { $0.id == file.id }),
                 try SHA256.hash(file.data) == f.hash else {
+                    log(debug: "Invalid file \(file.id.logId)")
                     throw RendezvousError.invalidRequest
             }
         }
@@ -76,6 +79,7 @@ extension Server {
         // Get the member who uploaded the message
         let index = Int(upload.update.indexInMemberList)
         guard index < topic.info.members.count else {
+            log(debug: "Invalid topic member")
             throw RendezvousError.invalidRequest
         }
         let member = topic.info.members[index]
@@ -87,6 +91,7 @@ extension Server {
         
         // Check that the signature is valid
         guard let signatureKey = try? member.signatureKey.toPublicKey() else {
+            log(debug: "Invalid signature key")
             throw RendezvousError.invalidRequest
         }
         try upload.update.verifySignature(with: signatureKey)

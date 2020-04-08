@@ -40,6 +40,6 @@ public enum Constants {
     public static let maximumAppIdLength = 10
     
     /// The maximum length of message metadata
-    public static let maximumMetadataLength = 100
+    public static let maximumMetadataLength = 400
     
 }

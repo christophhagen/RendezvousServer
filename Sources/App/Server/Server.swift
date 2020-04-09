@@ -158,6 +158,7 @@ final class Server: Logger {
         self.isDevelopmentServer = development
         self.shouldServeStaticFiles = serveStaticFiles
         self.storage = storage
+        log(debug: "Loaded \(internalUsers.count) users, \(authTokens.count) devices, \(topics.count) topics")
     }
     
     /// Serialize the management data for storage on disk.

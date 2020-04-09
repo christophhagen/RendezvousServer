@@ -230,6 +230,7 @@ final class Server: Logger {
         // Check if authentication is valid
         guard let deviceToken = authTokens[device],
             constantTimeCompare(deviceToken, token) else {
+                log(debug: "Invalid token \(token.logId) for device \(device.logId)")
                 throw RendezvousError.authenticationFailed
         }
     }

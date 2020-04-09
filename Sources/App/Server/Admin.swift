@@ -123,7 +123,7 @@ extension Server {
 
         // Check that the user exists.
         guard let user = self.user(with: userKey) else {
-            throw RendezvousError.authenticationFailed
+            throw RendezvousError.resourceNotAvailable
         }
         
         // Delete the user data

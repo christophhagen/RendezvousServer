@@ -95,5 +95,7 @@ extension Server {
                 add(topicUpdate: topic, for: device.deviceKey, of: member)
             }
         }
+        
+        didChangeData()
     }
 }

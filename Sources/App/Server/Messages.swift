@@ -114,6 +114,8 @@ extension Server {
                 chain.output = output
             }
         }
+        let result = try message.chain.serializedData()
+        
         update(chain: message.chain, for: upload.topicID)
         
         // Add the message to each device in the topic
@@ -129,8 +131,10 @@ extension Server {
             }
         }
         
+        didChangeData()
+        
         // Return the new chain state
-        return try message.chain.serializedData()
+        return result
     }
     
     func getMessages(_ request: Request) throws -> Data {
